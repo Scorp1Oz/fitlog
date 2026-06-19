@@ -1,0 +1,30 @@
+/* Базові імпорти Tailwind v4 + NativeWind. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+/* Наші токени дизайн-системи (темний + лайм).
+   У Tailwind v4 кольори задаються тут, у @theme, а не в tailwind.config.js.
+   --color-<назва> автоматично дає класи bg-<назва>, text-<назва>, border-<назва>. */
+@theme {
+  --color-bg: #0d0d0d; /* основний фон екрана */
+  --color-surface: #161616; /* картки, панелі, поля вводу */
+  --color-surface-2: #1e1e1e; /* вкладені блоки, header */
+  --color-border: #222222; /* рамки, роздільники */
+  --color-faint: #2a2a2a; /* неактивні номери, дуже тьмяний текст */
+  --color-lime: #c8f135; /* акцент, активний стан, головні цифри, CTA */
+  --color-orange: #ff4d1c; /* вторинний акцент (фокус дня, попередження) */
+  --color-text: #e8e8e8; /* основний текст */
+  --color-text-muted: #888888; /* підписи, описи */
+  --color-text-dim: #555555; /* мітки, мета-інфо */
+  --color-success: #7bc043; /* виконаний підхід */
+  --color-on-lime: #0d0d0d; /* текст на лаймовій кнопці */
+
+  /* Шрифти. Значення = ключі, під якими ми вантажимо шрифти в _layout.tsx.
+     Дають класи font-display, font-sans, font-sans-strong, font-mono. */
+  --font-display: "BebasNeue_400Regular"; /* заголовки, великі цифри */
+  --font-sans: "IBMPlexSans_400Regular"; /* основний текст, кнопки */
+  --font-sans-strong: "IBMPlexSans_600SemiBold"; /* body-strong */
+  --font-mono: "IBMPlexMono_400Regular"; /* мітки, таймер, табличні цифри */
+}
