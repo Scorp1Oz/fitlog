@@ -12,6 +12,10 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
+import { DbProvider } from "@/db/DbProvider";
+import { LockGate } from "@/lock/LockGate";
+import { LockProvider } from "@/lock/LockContext";
+
 // Не ховати екран-заставку, поки шрифти не завантажились.
 SplashScreen.preventAutoHideAsync();
 
@@ -38,9 +42,13 @@ export default function RootLayout() {
   // Ховаємо стандартний світлий заголовок навігації — робитимемо власні
   // темні шапки на кожному екрані за дизайн-системою.
   return (
-    <>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }} />
-    </>
+    <DbProvider>
+      <LockProvider>
+        <StatusBar style="light" />
+        <LockGate>
+          <Stack screenOptions={{ headerShown: false }} />
+        </LockGate>
+      </LockProvider>
+    </DbProvider>
   );
 }

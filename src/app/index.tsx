@@ -1,12 +1,35 @@
-import { Text, View } from "react-native";
+import { Pressable, Switch, Text, View } from "react-native";
+
+import { useLock } from "@/lock/LockContext";
 
 export default function Index() {
-  // Тимчасова перевірка NativeWind: чорний фон, текст по центру, лаймовий колір.
+  // Тимчасові контролі замка (поки немає окремого екрана Налаштувань).
+  const { enabled, setEnabled, lockNow, biometricsAvailable } = useLock();
+
   return (
-    <View className="flex-1 items-center justify-center gap-3 bg-bg">
+    <View className="flex-1 items-center justify-center gap-3 bg-bg px-6">
       <Text className="font-display text-5xl text-lime">FITLOG</Text>
-      <Text className="font-sans text-base text-text">NativeWind + шрифти працюють</Text>
-      <Text className="font-mono text-xs text-text-dim">IBM PLEX MONO · 12:34</Text>
+      <Text className="font-sans text-base text-text">Головний екран (тимчасовий)</Text>
+
+      <View className="mt-6 w-full max-w-xs gap-4">
+        <View className="flex-row items-center justify-between">
+          <Text className="font-sans text-text">Замок при вході</Text>
+          <Switch value={enabled} onValueChange={setEnabled} />
+        </View>
+
+        <Pressable
+          onPress={lockNow}
+          className="items-center border border-border py-3 active:opacity-70"
+        >
+          <Text className="font-sans-strong text-text">ЗАБЛОКУВАТИ ЗАРАЗ</Text>
+        </Pressable>
+
+        <Text className="text-center font-mono text-[10px] text-text-dim">
+          {biometricsAvailable
+            ? "БІОМЕТРІЯ ДОСТУПНА"
+            : "БІОМЕТРІЯ НЕДОСТУПНА (БРАУЗЕР / БЕЗ ЗАХИСТУ)"}
+        </Text>
+      </View>
     </View>
   );
 }
