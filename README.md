@@ -1,56 +1,88 @@
-# Welcome to your Expo app 👋
+# fitlog 🏋️
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Особистий **офлайн-трекер силових тренувань** для Android. Усі дані живуть на
+телефоні — без сервера й щомісячної плати за хостинг. Водночас це
+портфоліо-проєкт: тоннаж, оцінка 1ПМ, теплова карта тіла, експорт CSV.
 
-## Get started
+> Стиль: темний + лайм. Brutalist-естетика, великі цифри, пласкі поверхні.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Технологічний стек
 
-2. Start the app
+| Шар | Інструмент |
+|---|---|
+| Платформа | **Expo (React Native)**, SDK 56 · TypeScript |
+| Стилі | **NativeWind v5** + Tailwind v4 (токени в `global.css`) |
+| Шрифти | Bebas Neue · IBM Plex Sans · IBM Plex Mono |
+| База даних | **expo-sqlite** — єдине джерело правди, повний офлайн |
+| Міграції | власний раннер на `PRAGMA user_version` (старт зі схеми v1) |
+| Профілі | мультипрофільність: кожен акаунт має власні дані (`profile_id`) |
+| Рантайм-стан | **Zustand** *(згодом)* |
+| Захист входу | **expo-local-authentication** + **expo-secure-store** |
+| Картинки | **expo-image** (кешовані прев'ю вправ) |
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## Поточний стан
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+**Фаза 0 — каркас (завершено):**
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- [x] NativeWind v5 + дизайн-токени (кольори, шрифти)
+- [x] Екран-замок: біометрія + прапорець у SecureStore (з обробкою браузера)
+- [x] Модуль БД + міграційний раннер, схема v1 (profiles, exercises, routines,
+  sessions, session_sets)
 
-## Get a fresh project
+**Далі (фаза 1):** логін/реєстрація на таблиці `profiles`, засів бібліотеки
+вправ, екран логування тренування. Повна дорожня карта:
+[`docs/fitlog_plan.md`](docs/fitlog_plan.md).
 
-When you're ready, run:
+---
+
+## Запуск
 
 ```bash
-npm run reset-project
+npm install
+npx expo start        # далі: натисни 'a' (Android), 'w' (веб) або скануй QR в Expo Go
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Потрібен лише Node.js і застосунок **Expo Go** на телефоні (Android, той самий
+Wi-Fi). Android Studio не обов'язковий.
 
-### Other setup steps
+> ⚠️ Біометрія працює на пристрої з налаштованим відбитком/обличчям. У браузері
+> екран-замок не блокує (передбачено).
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+---
 
-## Learn more
+## Структура
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+src/
+  app/          # екрани (expo-router, file-based routing)
+  lock/         # екран-замок: логіка, Context, UI, «ворота»
+  db/           # SQLite: схема, міграційний раннер, provider
+global.css      # токени дизайн-системи (@theme) + база Tailwind
+docs/           # план, дизайн-система, навчальні конспекти сесій
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## Документація
 
-Join our community of developers creating universal apps.
+- [План реалізації](docs/fitlog_plan.md) — фази й архітектурні рішення.
+- [Дизайн-система](docs/fitlog_design_system.md) — кольори, типографіка, компоненти.
+- Навчальні конспекти: [сесія 1 — NativeWind/шрифти](docs/session-01-nativewind-fonts.md) ·
+  [сесія 2 — Lock Screen](docs/session-02-lock-screen.md) ·
+  [сесія 3 — SQLite/міграції](docs/session-03-sqlite-migrations.md).
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## Збірка APK (пізніше)
+
+```bash
+eas build -p android --profile preview   # buildType: apk
+```
+
+---
+
+*Принцип роботи: маленькі перевірені кроки. Кожна фаза — завершений робочий результат.*
