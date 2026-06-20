@@ -33,9 +33,15 @@
 - [x] Модуль БД + міграційний раннер, схема v1 (profiles, exercises, routines,
   sessions, session_sets)
 
-**Далі (фаза 1):** логін/реєстрація на таблиці `profiles`, засів бібліотеки
-вправ, екран логування тренування. Повна дорожня карта:
-[`docs/fitlog_plan.md`](docs/fitlog_plan.md).
+**Фаза 1 — у процесі:**
+
+- [x] Реєстрація / логін на таблиці `profiles` (хешований пароль, активний
+  профіль, «залишитись у системі», запит біометрії після реєстрації)
+- [x] Стилізований екран входу (радіальний градієнт, матове скло, анімовані
+  частинки на reanimated)
+- [ ] Засів бібліотеки вправ · екран логування тренування
+
+Повна дорожня карта: [`docs/fitlog_plan.md`](docs/fitlog_plan.md).
 
 ---
 
@@ -59,8 +65,9 @@ Wi-Fi). Android Studio не обов'язковий.
 ```
 src/
   app/          # екрани (expo-router, file-based routing)
+  auth/         # акаунти: логін/реєстрація, Context, екран входу + декор
   lock/         # екран-замок: логіка, Context, UI, «ворота»
-  db/           # SQLite: схема, міграційний раннер, provider
+  db/           # SQLite: схема, міграційний раннер, profiles, provider
 global.css      # токени дизайн-системи (@theme) + база Tailwind
 docs/           # план, дизайн-система, навчальні конспекти сесій
 ```
@@ -73,7 +80,9 @@ docs/           # план, дизайн-система, навчальні ко
 - [Дизайн-система](docs/fitlog_design_system.md) — кольори, типографіка, компоненти.
 - Навчальні конспекти: [сесія 1 — NativeWind/шрифти](docs/session-01-nativewind-fonts.md) ·
   [сесія 2 — Lock Screen](docs/session-02-lock-screen.md) ·
-  [сесія 3 — SQLite/міграції](docs/session-03-sqlite-migrations.md).
+  [сесія 3 — SQLite/міграції](docs/session-03-sqlite-migrations.md) ·
+  [сесія 4 — Акаунти](docs/session-04-accounts.md) ·
+  [сесія 5 — Візуальний шар](docs/session-05-visual-layer.md).
 
 ---
 
