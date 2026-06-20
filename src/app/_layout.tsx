@@ -17,6 +17,7 @@ import { AuthProvider } from "@/auth/AuthContext";
 import { DbProvider } from "@/db/DbProvider";
 import { LockGate } from "@/lock/LockGate";
 import { LockProvider } from "@/lock/LockContext";
+import { colors } from "@/theme/colors";
 
 // Не ховати екран-заставку, поки шрифти не завантажились.
 SplashScreen.preventAutoHideAsync();
@@ -50,7 +51,15 @@ export default function RootLayout() {
           <StatusBar style="light" />
           <AuthGate>
             <LockGate>
-              <Stack screenOptions={{ headerShown: false }} />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: "slide_from_right",
+                  // Темний фон навігатора — інакше під час переходу проблискує
+                  // стандартний білий фон екрана.
+                  contentStyle: { backgroundColor: colors.bg },
+                }}
+              />
             </LockGate>
           </AuthGate>
         </LockProvider>

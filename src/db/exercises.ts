@@ -104,6 +104,26 @@ export async function listExercises(
   }));
 }
 
+/** Створити власну вправу (is_custom=1). Повертає id. */
+export async function createCustomExercise(
+  profileId: number,
+  data: { name: string; muscle: string | null; imageUri: string | null }
+): Promise<number> {
+  const db = getDatabase();
+  const images = JSON.stringify(data.imageUri ? [data.imageUri] : []);
+  const res = await db.runAsync(
+    `INSERT INTO exercises
+       (name, name_uk, primary_muscle, equipment, category, level, images, is_custom, profile_id)
+     VALUES (?, ?, ?, NULL, NULL, NULL, ?, 1, ?)`,
+    data.name,
+    data.name, // name_uk = введене (зазвичай українською)
+    data.muscle,
+    images,
+    profileId
+  );
+  return res.lastInsertRowId;
+}
+
 /** Групи м'язів, що реально присутні (для чипів-фільтрів). */
 export async function listMuscleGroups(): Promise<string[]> {
   const db = getDatabase();

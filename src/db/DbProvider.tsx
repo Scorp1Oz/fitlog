@@ -9,6 +9,7 @@ import {
 import { Text, View } from "react-native";
 
 import { initDatabase } from "./database";
+import { seedExercises } from "./exercises";
 
 const DbContext = createContext<SQLiteDatabase | null>(null);
 
@@ -17,7 +18,12 @@ export function DbProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    initDatabase().then(setDb).catch(setError);
+    initDatabase()
+      .then(async (database) => {
+        await seedExercises(database);
+        setDb(database);
+      })
+      .catch(setError);
   }, []);
 
   if (error) {

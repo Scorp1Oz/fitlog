@@ -1,5 +1,7 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -17,34 +19,60 @@ import {
 } from "@/db/exercises";
 import { tEquipment, tMuscle } from "@/exercises/translations";
 import { useTheme } from "@/theme/useTheme";
+import { useWorkoutStore } from "@/workout/workout-store";
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
+  const { pick } = useLocalSearchParams<{ pick?: string }>();
+  const isPicking = pick === "1";
+  const addExercise = useWorkoutStore((s) => s.addExercise);
+
   const [search, setSearch] = useState("");
   const [muscle, setMuscle] = useState<string | null>(null);
   const [muscles, setMuscles] = useState<string[]>([]);
   const [items, setItems] = useState<ExerciseListItem[]>([]);
 
-  useEffect(() => {
+  // У режимі вибору тап по вправі додає її в активне тренування й повертає назад.
+  const onPickExercise = (item: ExerciseListItem) => {
+    if (!isPicking) return;
+    addExercise({ id: item.id, name: item.name_uk?.trim() || item.name });
+    router.back();
+  };
+
+  const reload = useCallback(() => {
+    listExercises({ search, muscle }).then(setItems);
     listMuscleGroups().then(setMuscles);
-  }, []);
+  }, [search, muscle]);
 
   useEffect(() => {
-    listExercises({ search, muscle }).then(setItems);
-  }, [search, muscle]);
+    reload();
+  }, [reload]);
+
+  // Повернулись після створення власної вправи — оновлюємо список.
+  useFocusEffect(reload);
 
   return (
     <View className="flex-1 bg-bg">
-      <StackHeader title="ВПРАВИ" />
+      <StackHeader title={isPicking ? "ОБЕРИ ВПРАВУ" : "ВПРАВИ"} />
 
-      <View className="px-4 pt-4">
+      <View className="flex-row items-center gap-3 px-4 pt-4">
         <TextInput
           value={search}
           onChangeText={setSearch}
           placeholder="Пошук вправи…"
           placeholderTextColor={colors.textDim}
-          className="rounded-md border-b border-border bg-surface px-3 py-3 font-sans text-text"
+          className="flex-1 rounded-md border-b border-border bg-surface px-3 py-3 font-sans text-text"
         />
+        {!isPicking ? (
+          <Pressable
+            onPress={() => router.push("/exercise-new")}
+            accessibilityLabel="Додати вправу"
+            className="h-11 w-11 items-center justify-center rounded-full bg-lime active:opacity-80"
+          >
+            <MaterialCommunityIcons name="plus" size={24} color={colors.onLime} />
+          </Pressable>
+        ) : null}
       </View>
 
       <View className="py-3">
@@ -75,7 +103,11 @@ export default function ExercisesScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 96 }}
         ItemSeparatorComponent={() => <View className="h-px bg-border" />}
         renderItem={({ item }) => (
-          <View className="flex-row items-center gap-3 py-3">
+          <Pressable
+            onPress={() => onPickExercise(item)}
+            disabled={!isPicking}
+            className="flex-row items-center gap-3 py-3 active:opacity-60"
+          >
             {item.preview ? (
               <Image
                 source={{ uri: item.preview }}
@@ -100,7 +132,14 @@ export default function ExercisesScreen() {
                 {tMuscle(item.primary_muscle)} · {tEquipment(item.equipment)}
               </Text>
             </View>
-          </View>
+            {isPicking ? (
+              <MaterialCommunityIcons
+                name="plus-circle-outline"
+                size={22}
+                color={colors.lime}
+              />
+            ) : null}
+          </Pressable>
         )}
         ListEmptyComponent={
           <Text className="px-4 py-10 text-center font-sans text-text-muted">

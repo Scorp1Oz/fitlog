@@ -13,7 +13,9 @@ export function ScreenBackground() {
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Svg style={StyleSheet.absoluteFill}>
+      {/* Явні числові розміри полотна: на частині Android Svg із самим лише
+          style не розтягується на весь екран і лишає непокриту чорну смугу. */}
+      <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
         <Defs>
           {/* Зліва — центр за лівим краєм, приблизно на третині згори. */}
           <RadialGradient
@@ -45,8 +47,8 @@ export function ScreenBackground() {
         </Defs>
 
         {/* Два прозорі шари накладаються — обидва ореоли видно. */}
-        <Rect width="100%" height="100%" fill="url(#glowTopLeft)" />
-        <Rect width="100%" height="100%" fill="url(#glowBottomRight)" />
+        <Rect width={width} height={height} fill="url(#glowTopLeft)" />
+        <Rect width={width} height={height} fill="url(#glowBottomRight)" />
       </Svg>
     </View>
   );
