@@ -12,6 +12,8 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
+import { AuthGate } from "@/auth/AuthGate";
+import { AuthProvider } from "@/auth/AuthContext";
 import { DbProvider } from "@/db/DbProvider";
 import { LockGate } from "@/lock/LockGate";
 import { LockProvider } from "@/lock/LockContext";
@@ -43,12 +45,16 @@ export default function RootLayout() {
   // темні шапки на кожному екрані за дизайн-системою.
   return (
     <DbProvider>
-      <LockProvider>
-        <StatusBar style="light" />
-        <LockGate>
-          <Stack screenOptions={{ headerShown: false }} />
-        </LockGate>
-      </LockProvider>
+      <AuthProvider>
+        <LockProvider>
+          <StatusBar style="light" />
+          <AuthGate>
+            <LockGate>
+              <Stack screenOptions={{ headerShown: false }} />
+            </LockGate>
+          </AuthGate>
+        </LockProvider>
+      </AuthProvider>
     </DbProvider>
   );
 }
