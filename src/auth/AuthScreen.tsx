@@ -15,6 +15,7 @@ import {
 import Svg, { Defs, Rect, RadialGradient, Stop } from "react-native-svg";
 
 import { useLock } from "@/lock/LockContext";
+import { useTheme } from "@/theme/useTheme";
 
 import { useAuth } from "./AuthContext";
 import { FloatingCrosses } from "./FloatingCrosses";
@@ -24,6 +25,7 @@ type Mode = "login" | "register";
 export function AuthScreen() {
   const { login, register } = useAuth();
   const { setEnabled, biometricsAvailable } = useLock();
+  const { colors } = useTheme();
   const [mode, setMode] = useState<Mode>("login");
   const [login_, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -88,24 +90,21 @@ export function AuthScreen() {
               cy={-size.height * 0.08}
               r={size.width * 0.95}
             >
-              <Stop offset="0" stopColor="#C8F135" stopOpacity={0.7} />
-              <Stop offset="0.45" stopColor="#C8F135" stopOpacity={0.14} />
-              <Stop offset="1" stopColor="#0D0D0D" stopOpacity={0} />
+              <Stop offset="0" stopColor={colors.lime} stopOpacity={0.7} />
+              <Stop offset="0.45" stopColor={colors.lime} stopOpacity={0.14} />
+              <Stop offset="1" stopColor={colors.bg} stopOpacity={0} />
             </RadialGradient>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#limeGlow)" />
         </Svg>
       ) : null}
-      {/* Сірі хрестики, що повільно літають (під склом → стають матовими). */}
+      {/* Розмите скло — окремий шар МІЖ градієнтом і хрестиками: згладжує
+          «кільця» градієнта, але хрестики лишаються чіткими (вони вище). */}
+      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+      {/* Сірі хрестики, що повільно літають — НАД склом, тож не розмиваються. */}
       {size.width > 0 ? (
         <FloatingCrosses width={size.width} height={size.height} />
       ) : null}
-      {/* Розмите скло поверх градієнта — пом'якшує лайм у «матове» світіння. */}
-      <BlurView
-        intensity={40}
-        tint="dark"
-        style={StyleSheet.absoluteFill}
-      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -157,9 +156,9 @@ export function AuthScreen() {
             <Switch
               value={stay}
               onValueChange={setStay}
-              trackColor={{ false: "#2A2A2A", true: "#6B7F2A" }}
-              thumbColor={stay ? "#C8F135" : "#E8E8E8"}
-              ios_backgroundColor="#2A2A2A"
+              trackColor={{ false: colors.faint, true: colors.limeTrack }}
+              thumbColor={stay ? colors.lime : colors.text}
+              ios_backgroundColor={colors.faint}
             />
           </View>
         </View>

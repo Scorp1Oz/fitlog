@@ -12,6 +12,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { useTheme } from "@/theme/useTheme";
+
 type CrossConfig = {
   startX: number;
   startY: number;
@@ -33,6 +35,7 @@ function Cross({
   delay,
   rotate,
 }: CrossConfig) {
+  const { colors } = useTheme();
   // t повільно ходить 0↔1 туди-сюди по колу нескінченно.
   const t = useSharedValue(0);
 
@@ -63,7 +66,7 @@ function Cross({
           position: "absolute",
           left: startX,
           top: startY,
-          color: "#8A8A8A",
+          color: colors.textMuted,
           fontSize: size,
           fontWeight: "300",
         },
