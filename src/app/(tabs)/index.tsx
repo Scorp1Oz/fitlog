@@ -6,7 +6,7 @@ export default function Home() {
   const { profile } = useAuth();
 
   return (
-    <View className="flex-1 bg-bg px-4 pt-16">
+    <View className="flex-1 px-4 pt-6">
       <Text className="font-mono text-[10px] tracking-[3px] text-text-dim">
         ГОЛОВНИЙ
       </Text>

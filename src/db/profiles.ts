@@ -6,8 +6,9 @@ import { getDatabase } from "./database";
 
 export type Profile = {
   id: number;
-  username: string;
-  display_name: string | null;
+  username: string; // логін (незмінний)
+  display_name: string | null; // редаговане ім'я
+  avatar_uri: string | null; // локальний URI фото або null
   created_at: number;
 };
 
@@ -16,6 +17,16 @@ type ProfileRow = Profile & {
   password_hash: string;
   password_salt: string;
 };
+
+function toProfile(row: ProfileRow): Profile {
+  return {
+    id: row.id,
+    username: row.username,
+    display_name: row.display_name,
+    avatar_uri: row.avatar_uri,
+    created_at: row.created_at,
+  };
+}
 
 /** Чи існує профіль із таким іменем (для дружнього повідомлення при реєстрації). */
 export async function usernameExists(username: string): Promise<boolean> {
@@ -50,6 +61,7 @@ export async function createProfile(
     id: result.lastInsertRowId,
     username,
     display_name: username,
+    avatar_uri: null,
     created_at: createdAt,
   };
 }
@@ -69,12 +81,7 @@ export async function verifyCredentials(
   const hash = await hashPassword(password, row.password_salt);
   if (hash !== row.password_hash) return null;
 
-  return {
-    id: row.id,
-    username: row.username,
-    display_name: row.display_name,
-    created_at: row.created_at,
-  };
+  return toProfile(row);
 }
 
 /** Знайти профіль за id (для відновлення активного профілю при старті). */
@@ -84,11 +91,34 @@ export async function getProfileById(id: number): Promise<Profile | null> {
     "SELECT * FROM profiles WHERE id = ?",
     id
   );
-  if (!row) return null;
-  return {
-    id: row.id,
-    username: row.username,
-    display_name: row.display_name,
-    created_at: row.created_at,
-  };
+  return row ? toProfile(row) : null;
+}
+
+/** Оновити ім'я та/або фото. Передавай лише те, що змінюєш. Повертає свіжий профіль. */
+export async function updateProfile(
+  id: number,
+  fields: { displayName?: string | null; avatarUri?: string | null }
+): Promise<Profile | null> {
+  const db = getDatabase();
+  const sets: string[] = [];
+  const values: (string | null)[] = [];
+
+  if (fields.displayName !== undefined) {
+    sets.push("display_name = ?");
+    values.push(fields.displayName);
+  }
+  if (fields.avatarUri !== undefined) {
+    sets.push("avatar_uri = ?");
+    values.push(fields.avatarUri);
+  }
+
+  if (sets.length > 0) {
+    await db.runAsync(
+      `UPDATE profiles SET ${sets.join(", ")} WHERE id = ?`,
+      ...values,
+      id
+    );
+  }
+
+  return getProfileById(id);
 }

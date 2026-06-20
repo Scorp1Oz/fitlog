@@ -10,6 +10,7 @@ import {
 import {
   createProfile,
   getProfileById,
+  updateProfile as updateProfileInDb,
   usernameExists,
   verifyCredentials,
   type Profile,
@@ -42,6 +43,11 @@ type AuthValue = {
     persist: boolean
   ) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  // Оновити ім'я/фото активного профілю (пише в БД і оновлює всюди).
+  updateProfile: (fields: {
+    displayName?: string | null;
+    avatarUri?: string | null;
+  }) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -113,9 +119,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("signedOut");
   };
 
+  const updateProfile = async (fields: {
+    displayName?: string | null;
+    avatarUri?: string | null;
+  }): Promise<void> => {
+    if (!profile) return;
+    const updated = await updateProfileInDb(profile.id, fields);
+    if (updated) setProfile(updated);
+  };
+
   return (
     <AuthContext.Provider
-      value={{ status, profile, register, login, logout }}
+      value={{ status, profile, register, login, logout, updateProfile }}
     >
       {children}
     </AuthContext.Provider>

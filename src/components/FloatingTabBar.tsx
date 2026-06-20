@@ -52,8 +52,11 @@ export function FloatingTabBar() {
         <TabTrigger name="workout" asChild>
           <TabButton icon="dumbbell" label="ТРЕНУВАННЯ" />
         </TabTrigger>
-        <TabTrigger name="settings" asChild>
-          <TabButton icon="cog-outline" label="НАЛАШТУВАННЯ" />
+        <TabTrigger name="analytics" asChild>
+          <TabButton icon="chart-line" label="АНАЛІТИКА" />
+        </TabTrigger>
+        <TabTrigger name="run" asChild>
+          <TabButton icon="image-filter-hdr" label="БІГ" />
         </TabTrigger>
       </View>
     </View>

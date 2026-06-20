@@ -1,6 +1,7 @@
 // Відкриття бази (один екземпляр на весь додаток) і її ініціалізація.
 import * as SQLite from "expo-sqlite";
 
+import { seedExercises } from "./exercises";
 import { runMigrations } from "./runner";
 
 const DB_NAME = "fitlog.db";
@@ -22,6 +23,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
   await db.execAsync("PRAGMA foreign_keys = ON;");
 
   const version = await runMigrations(db);
+  await seedExercises(db);
 
   if (__DEV__) {
     const tables = await db.getAllAsync<{ name: string }>(

@@ -81,8 +81,11 @@ export const migrations: Migration[] = [
     },
   },
 
-  // Майбутні приклади (НЕ вмикати зараз):
-  // { version: 2, up: async (db) => {
-  //     await db.execAsync("ALTER TABLE session_sets ADD COLUMN rpe REAL;");
-  // } },
+  {
+    // v2 — фото профілю. Ім'я вже є (display_name), логін — username.
+    version: 2,
+    up: async (db) => {
+      await db.execAsync("ALTER TABLE profiles ADD COLUMN avatar_uri TEXT;");
+    },
+  },
 ];
