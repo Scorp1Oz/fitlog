@@ -55,6 +55,12 @@ export function formatLongDate(ts: number | Date): string {
   return `${d.getDate()} ${MONTHS_GEN[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+// «21 черв» — компактна дата (для «минулого разу»).
+export function formatShortDate(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getDate()} ${MONTHS_GEN[d.getMonth()].slice(0, 4)}`;
+}
+
 // «21:30»
 export function formatTime(ts: number): string {
   const d = new Date(ts);

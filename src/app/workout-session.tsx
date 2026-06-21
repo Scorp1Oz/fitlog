@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useAudioPlayer } from "expo-audio";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -14,12 +15,24 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/auth/AuthContext";
-import { countCompletedSets, saveSession } from "@/db/sessions";
+import { useConfirm } from "@/components/ConfirmDialog";
+import { useCurtain } from "@/components/CurtainOverlay";
+import { usePicker } from "@/exercises/picker";
+import {
+  countCompletedSets,
+  getLastExerciseSets,
+  saveSession,
+} from "@/db/sessions";
+import { formatShortDate } from "@/lib/date";
+import { formatSetShort } from "@/lib/strength";
 import { useTheme } from "@/theme/useTheme";
-import { RestTimer } from "@/workout/RestTimer";
+import { RestBar } from "@/workout/RestBar";
+import { RestMenu } from "@/workout/RestMenu";
+import { useRestSettings } from "@/workout/rest-settings";
 import { useWorkoutStore } from "@/workout/workout-store";
 
-const REST_SECONDS = 90;
+// «минулого разу» для вправи: дата + підходи (null — ще не робив).
+type LastSets = { date: number; sets: { weight: number; reps: number }[] } | null;
 
 // Тривалість тренування: m:ss, а від години — h:mm:ss.
 function fmtElapsed(ms: number): string {
@@ -37,17 +50,33 @@ export default function WorkoutSession() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { profile } = useAuth();
+  const playCurtain = useCurtain((s) => s.play);
+  const confirm = useConfirm((s) => s.ask);
+
+  const requestPick = usePicker((s) => s.request);
 
   const startedAt = useWorkoutStore((s) => s.startedAt);
   const exercises = useWorkoutStore((s) => s.exercises);
   const cancel = useWorkoutStore((s) => s.cancel);
+  const addExercise = useWorkoutStore((s) => s.addExercise);
   const addSet = useWorkoutStore((s) => s.addSet);
   const updateSet = useWorkoutStore((s) => s.updateSet);
   const removeSet = useWorkoutStore((s) => s.removeSet);
   const removeExercise = useWorkoutStore((s) => s.removeExercise);
 
+  const beep = useAudioPlayer(require("../../assets/beep.wav"));
+
+  const defaultRest = useRestSettings((s) => s.defaultRest);
+  const muted = useRestSettings((s) => s.muted);
+  const setMuted = useRestSettings((s) => s.setMuted);
+  const setDefaultRest = useRestSettings((s) => s.setDefaultRest);
+  const hydrateSettings = useRestSettings((s) => s.hydrate);
+
   const [now, setNow] = useState(Date.now());
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Кеш «минулого разу» по exerciseId. undefined — ще не вантажили.
+  const [history, setHistory] = useState<Record<number, LastSets>>({});
   // true, коли вже самі ініціюємо вихід (завершення/скасування) — щоб
   // ефект-вартовий нижче не зробив другий router.back().
   const leavingRef = useRef(false);
@@ -58,10 +87,37 @@ export default function WorkoutSession() {
     return () => clearInterval(id);
   }, []);
 
-  // Закінчився відпочинок — ховаємо панель.
+  // Підтягуємо збережені налаштування таймера.
   useEffect(() => {
-    if (restEndsAt && now >= restEndsAt) setRestEndsAt(null);
-  }, [now, restEndsAt]);
+    hydrateSettings();
+  }, [hydrateSettings]);
+
+  // Підвантажуємо «минулого разу» для кожної доданої вправи (один раз).
+  useEffect(() => {
+    if (!profile) return;
+    for (const ex of exercises) {
+      if (history[ex.exerciseId] === undefined) {
+        getLastExerciseSets(profile.id, ex.exerciseId).then((res) =>
+          setHistory((h) => ({ ...h, [ex.exerciseId]: res }))
+        );
+      }
+    }
+  }, [exercises, profile, history]);
+
+  // Закінчився відпочинок — біп і скидання відліку.
+  useEffect(() => {
+    if (restEndsAt && now >= restEndsAt) {
+      setRestEndsAt(null);
+      if (!muted) {
+        try {
+          beep.seekTo(0);
+          beep.play();
+        } catch {
+          // звук не критичний
+        }
+      }
+    }
+  }, [now, restEndsAt, beep, muted]);
 
   // Захист: якщо екран відкрили без активної сесії (не через нашу кнопку) —
   // повертаємось назад. Якщо вихід ініціювали ми самі — не дублюємо back.
@@ -80,44 +136,76 @@ export default function WorkoutSession() {
 
   const restRemaining = restEndsAt ? Math.ceil((restEndsAt - now) / 1000) : 0;
 
-  const onToggleSet = (exIdx: number, setIdx: number, completed: boolean) => {
-    updateSet(exIdx, setIdx, { completed: !completed });
-    // Позначили виконаним → запускаємо відпочинок.
-    if (!completed) setRestEndsAt(Date.now() + REST_SECONDS * 1000);
+  // Зміна поля підходу. Якщо підхід щойно став повним (є вага й повтори) —
+  // запускаємо відпочинок. Саме «виконано» виставляє стор автоматично.
+  const changeSet = (
+    exIdx: number,
+    setIdx: number,
+    patch: { weight?: string; reps?: string }
+  ) => {
+    const cur = exercises[exIdx].sets[setIdx];
+    const next = { ...cur, ...patch };
+    // Підхід стає виконаним за наявності повторів (вага опційна).
+    const wasDone = cur.reps.trim() !== "";
+    const willDone = next.reps.trim() !== "";
+    updateSet(exIdx, setIdx, patch);
+    if (!wasDone && willDone) setRestEndsAt(Date.now() + defaultRest * 1000);
+  };
+
+  // Кнопки ±: крок 5 кг для ваги, 1 для повторів. Не нижче 0.
+  const stepWeight = (exIdx: number, setIdx: number, delta: number) => {
+    const cur = parseFloat(exercises[exIdx].sets[setIdx].weight.replace(",", ".")) || 0;
+    const val = Math.max(0, cur + delta);
+    changeSet(exIdx, setIdx, { weight: String(val) });
+  };
+  const stepReps = (exIdx: number, setIdx: number, delta: number) => {
+    const cur = parseInt(exercises[exIdx].sets[setIdx].reps, 10) || 0;
+    const val = Math.max(0, cur + delta);
+    changeSet(exIdx, setIdx, { reps: String(val) });
   };
 
   const adjustRest = (delta: number) =>
     setRestEndsAt((end) =>
       Math.max(Date.now(), (end ?? Date.now()) + delta * 1000)
     );
+  const restartRest = () =>
+    setRestEndsAt(Date.now() + defaultRest * 1000);
+  const skipRest = () => setRestEndsAt(null);
 
-  const onCancel = () => {
-    Alert.alert("Скасувати тренування?", "Незбережені підходи зникнуть.", [
-      { text: "Ні", style: "cancel" },
-      {
-        text: "Скасувати",
-        style: "destructive",
-        onPress: leave,
-      },
-    ]);
+  const onCancel = async () => {
+    const ok = await confirm({
+      title: "Скасувати тренування?",
+      message: "Незбережені підходи зникнуть.",
+      confirmText: "Скасувати",
+      cancelText: "Ні",
+      destructive: true,
+    });
+    if (ok) leave();
   };
 
-  const onFinish = () => {
+  const onFinish = async () => {
     const done = countCompletedSets(exercises);
     if (done === 0) {
-      Alert.alert(
-        "Немає виконаних підходів",
-        "Завершити без збереження тренування?",
-        [
-          { text: "Назад", style: "cancel" },
-          { text: "Відкинути", style: "destructive", onPress: leave },
-        ]
-      );
+      const ok = await confirm({
+        title: "Немає виконаних підходів",
+        message: "Завершити без збереження тренування?",
+        confirmText: "Відкинути",
+        cancelText: "Назад",
+        destructive: true,
+      });
+      if (ok) leave();
       return;
     }
     if (!profile) return;
     saveSession(profile.id, startedAt, exercises)
-      .then(leave)
+      .then((id) => {
+        leavingRef.current = true;
+        // Лаймова завіса піднімається; коли перекрила екран — навігуємо під нею.
+        playCurtain(() => {
+          cancel();
+          router.replace(`/workout-summary?id=${id}`);
+        });
+      })
       .catch((e) => Alert.alert("Помилка збереження", String(e)));
   };
 
@@ -144,6 +232,27 @@ export default function WorkoutSession() {
         <View className="w-16" />
       </View>
 
+      {/* Постійна панель відпочинку — завжди зверху вправ */}
+      <RestBar
+        remaining={restRemaining}
+        active={restEndsAt !== null}
+        muted={muted}
+        onAdjust={adjustRest}
+        onRestart={restartRest}
+        onSkip={skipRest}
+        onToggleMute={() => setMuted(!muted)}
+        onOpenMenu={() => setMenuOpen(true)}
+      />
+
+      <RestMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        initialSeconds={restEndsAt ? restRemaining : defaultRest}
+        onStart={(s) => setRestEndsAt(Date.now() + s * 1000)}
+        defaultRest={defaultRest}
+        onChangeDefault={setDefaultRest}
+      />
+
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -161,7 +270,9 @@ export default function WorkoutSession() {
               </Text>
             </View>
           ) : (
-            exercises.map((ex, exIdx) => (
+            exercises.map((ex, exIdx) => {
+              const hist = history[ex.exerciseId];
+              return (
               <View
                 key={exIdx}
                 className="mt-4 rounded-2xl border border-border bg-surface p-3"
@@ -186,65 +297,104 @@ export default function WorkoutSession() {
                   </Pressable>
                 </View>
 
+                {/* Минулого разу */}
+                {hist ? (
+                  <Text
+                    className="mt-1 font-mono text-[10px] text-text-dim"
+                    numberOfLines={1}
+                  >
+                    Минулого разу ({formatShortDate(hist.date)}):{" "}
+                    {hist.sets
+                      .map((s) => formatSetShort(s.weight, s.reps))
+                      .join(" · ")}
+                  </Text>
+                ) : null}
+
                 {/* Заголовки колонок */}
                 <View className="mt-3 flex-row items-center">
-                  <Text className="w-8 font-mono text-[10px] text-text-dim">
-                    #
-                  </Text>
-                  <Text className="flex-1 text-center font-mono text-[10px] text-text-dim">
+                  <View className="w-6" />
+                  <Text className="mx-1 flex-1 text-center font-mono text-[10px] text-text-dim">
                     КГ
                   </Text>
-                  <Text className="flex-1 text-center font-mono text-[10px] text-text-dim">
+                  <Text className="mx-1 flex-1 text-center font-mono text-[10px] text-text-dim">
                     ПОВТ.
                   </Text>
-                  <View className="w-9" />
-                  <View className="w-7" />
+                  <View className="w-6" />
                 </View>
 
                 {ex.sets.map((st, setIdx) => (
                   <View key={setIdx} className="mt-2 flex-row items-center">
-                    <Text className="w-8 font-mono text-text-muted">
-                      {setIdx + 1}
-                    </Text>
-                    <TextInput
-                      value={st.weight}
-                      onChangeText={(t) =>
-                        updateSet(exIdx, setIdx, { weight: t })
-                      }
-                      keyboardType="decimal-pad"
-                      placeholder="0"
-                      placeholderTextColor={colors.textDim}
-                      style={{ textAlign: "center" }}
-                      className="mx-1 flex-1 rounded-lg bg-surface-2 px-2 py-2 font-sans text-text"
-                    />
-                    <TextInput
-                      value={st.reps}
-                      onChangeText={(t) => updateSet(exIdx, setIdx, { reps: t })}
-                      keyboardType="number-pad"
-                      placeholder="0"
-                      placeholderTextColor={colors.textDim}
-                      style={{ textAlign: "center" }}
-                      className="mx-1 flex-1 rounded-lg bg-surface-2 px-2 py-2 font-sans text-text"
-                    />
-                    <Pressable
-                      onPress={() => onToggleSet(exIdx, setIdx, st.completed)}
-                      hitSlop={4}
-                      className="w-9 items-center active:opacity-60"
-                    >
+                    {/* Індикатор виконання (виставляється автоматично) */}
+                    <View className="w-6 items-center">
                       <MaterialCommunityIcons
-                        name={
-                          st.completed
-                            ? "checkbox-marked"
-                            : "checkbox-blank-outline"
-                        }
-                        size={24}
-                        color={st.completed ? colors.lime : colors.textDim}
+                        name={st.completed ? "check-circle" : "circle-outline"}
+                        size={16}
+                        color={st.completed ? colors.lime : colors.faint}
                       />
-                    </Pressable>
+                    </View>
+
+                    {/* Вага: −5 [поле] +5 */}
+                    <View className="mx-1 flex-1 flex-row items-center rounded-lg bg-surface-2">
+                      <Pressable
+                        onPress={() => stepWeight(exIdx, setIdx, -5)}
+                        hitSlop={4}
+                        className="px-2 py-2 active:opacity-50"
+                      >
+                        <Text className="font-mono text-xs text-text-muted">−5</Text>
+                      </Pressable>
+                      <TextInput
+                        value={st.weight}
+                        onChangeText={(t) => changeSet(exIdx, setIdx, { weight: t })}
+                        keyboardType="decimal-pad"
+                        placeholder={
+                          hist?.sets[setIdx] ? String(hist.sets[setIdx].weight) : "0"
+                        }
+                        placeholderTextColor={colors.textDim}
+                        style={{ textAlign: "center" }}
+                        className="flex-1 py-2 font-sans text-text"
+                      />
+                      <Pressable
+                        onPress={() => stepWeight(exIdx, setIdx, 5)}
+                        hitSlop={4}
+                        className="px-2 py-2 active:opacity-50"
+                      >
+                        <Text className="font-mono text-xs text-text-muted">+5</Text>
+                      </Pressable>
+                    </View>
+
+                    {/* Повтори: −1 [поле] +1 */}
+                    <View className="mx-1 flex-1 flex-row items-center rounded-lg bg-surface-2">
+                      <Pressable
+                        onPress={() => stepReps(exIdx, setIdx, -1)}
+                        hitSlop={4}
+                        className="px-2 py-2 active:opacity-50"
+                      >
+                        <Text className="font-mono text-xs text-text-muted">−1</Text>
+                      </Pressable>
+                      <TextInput
+                        value={st.reps}
+                        onChangeText={(t) => changeSet(exIdx, setIdx, { reps: t })}
+                        keyboardType="number-pad"
+                        placeholder={
+                          hist?.sets[setIdx] ? String(hist.sets[setIdx].reps) : "0"
+                        }
+                        placeholderTextColor={colors.textDim}
+                        style={{ textAlign: "center" }}
+                        className="flex-1 py-2 font-sans text-text"
+                      />
+                      <Pressable
+                        onPress={() => stepReps(exIdx, setIdx, 1)}
+                        hitSlop={4}
+                        className="px-2 py-2 active:opacity-50"
+                      >
+                        <Text className="font-mono text-xs text-text-muted">+1</Text>
+                      </Pressable>
+                    </View>
+
                     <Pressable
                       onPress={() => removeSet(exIdx, setIdx)}
                       hitSlop={4}
-                      className="w-7 items-center active:opacity-60"
+                      className="w-6 items-center active:opacity-60"
                     >
                       <MaterialCommunityIcons
                         name="close"
@@ -264,26 +414,23 @@ export default function WorkoutSession() {
                   </Text>
                 </Pressable>
               </View>
-            ))
+              );
+            })
           )}
 
           <Pressable
-            onPress={() => router.push("/exercises?pick=1")}
+            onPress={() => {
+              requestPick((ex) => addExercise(ex));
+              router.push("/exercises?pick=1");
+            }}
             className="mt-4 items-center rounded-2xl border border-lime py-3.5 active:opacity-70"
           >
             <Text className="font-sans-strong text-lime">+ ДОДАТИ ВПРАВУ</Text>
           </Pressable>
         </ScrollView>
 
-        {/* Низ: відпочинок + завершення */}
+        {/* Низ: завершення */}
         <View className="px-4 pt-2" style={{ paddingBottom: insets.bottom + 12 }}>
-          {restEndsAt ? (
-            <RestTimer
-              remaining={restRemaining}
-              onAdjust={adjustRest}
-              onSkip={() => setRestEndsAt(null)}
-            />
-          ) : null}
           <Pressable
             onPress={onFinish}
             className="items-center rounded-2xl bg-lime py-4 active:opacity-80"

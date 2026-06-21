@@ -17,26 +17,26 @@ import {
   listMuscleGroups,
   type ExerciseListItem,
 } from "@/db/exercises";
+import { usePicker } from "@/exercises/picker";
 import { tEquipment, tMuscle } from "@/exercises/translations";
 import { useTheme } from "@/theme/useTheme";
-import { useWorkoutStore } from "@/workout/workout-store";
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { pick } = useLocalSearchParams<{ pick?: string }>();
   const isPicking = pick === "1";
-  const addExercise = useWorkoutStore((s) => s.addExercise);
+  const fulfill = usePicker((s) => s.fulfill);
 
   const [search, setSearch] = useState("");
   const [muscle, setMuscle] = useState<string | null>(null);
   const [muscles, setMuscles] = useState<string[]>([]);
   const [items, setItems] = useState<ExerciseListItem[]>([]);
 
-  // У режимі вибору тап по вправі додає її в активне тренування й повертає назад.
+  // У режимі вибору тап по вправі віддає її тому, хто запросив, і повертає назад.
   const onPickExercise = (item: ExerciseListItem) => {
     if (!isPicking) return;
-    addExercise({ id: item.id, name: item.name_uk?.trim() || item.name });
+    fulfill({ id: item.id, name: item.name_uk?.trim() || item.name });
     router.back();
   };
 
@@ -104,8 +104,11 @@ export default function ExercisesScreen() {
         ItemSeparatorComponent={() => <View className="h-px bg-border" />}
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => onPickExercise(item)}
-            disabled={!isPicking}
+            onPress={() =>
+              isPicking
+                ? onPickExercise(item)
+                : router.push(`/exercise-detail?id=${item.id}`)
+            }
             className="flex-row items-center gap-3 py-3 active:opacity-60"
           >
             {item.preview ? (

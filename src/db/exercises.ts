@@ -104,6 +104,45 @@ export async function listExercises(
   }));
 }
 
+export type ExerciseDetail = {
+  id: number;
+  name: string;
+  name_uk: string | null;
+  primary_muscle: string | null;
+  equipment: string | null;
+  level: string | null;
+  images: string[];
+};
+
+/** Одна вправа з метаданими (для екрана деталей). */
+export async function getExerciseById(
+  id: number
+): Promise<ExerciseDetail | null> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{
+    id: number;
+    name: string;
+    name_uk: string | null;
+    primary_muscle: string | null;
+    equipment: string | null;
+    level: string | null;
+    images: string | null;
+  }>(
+    "SELECT id, name, name_uk, primary_muscle, equipment, level, images FROM exercises WHERE id = ?",
+    id
+  );
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    name_uk: row.name_uk,
+    primary_muscle: row.primary_muscle,
+    equipment: row.equipment,
+    level: row.level,
+    images: row.images ? JSON.parse(row.images) : [],
+  };
+}
+
 /** Створити власну вправу (is_custom=1). Повертає id. */
 export async function createCustomExercise(
   profileId: number,

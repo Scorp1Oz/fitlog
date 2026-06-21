@@ -14,6 +14,8 @@ import { useEffect } from "react";
 
 import { AuthGate } from "@/auth/AuthGate";
 import { AuthProvider } from "@/auth/AuthContext";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { CurtainOverlay } from "@/components/CurtainOverlay";
 import { DbProvider } from "@/db/DbProvider";
 import { LockGate } from "@/lock/LockGate";
 import { LockProvider } from "@/lock/LockContext";
@@ -58,10 +60,15 @@ export default function RootLayout() {
                   // Темний фон навігатора — інакше під час переходу проблискує
                   // стандартний білий фон екрана.
                   contentStyle: { backgroundColor: colors.bg },
+                  // Не «заморожувати» невидимий екран — інакше при поверненні
+                  // (pop) він на кадр порожній і блимає білим.
+                  freezeOnBlur: false,
                 }}
               />
             </LockGate>
           </AuthGate>
+          <CurtainOverlay />
+          <ConfirmDialog />
         </LockProvider>
       </AuthProvider>
     </DbProvider>

@@ -1,4 +1,5 @@
 // Збереження завершеної сесії тренування у БД (sessions + session_sets).
+import { bestE1rm, epley1rm } from "@/lib/strength";
 import type { WorkoutExercise } from "@/workout/workout-store";
 
 import { getDatabase } from "./database";
@@ -111,6 +112,233 @@ export async function listSessionsByDay(
     dayStart,
     dayEnd
   );
+}
+
+/**
+ * Підходи цієї вправи з НАЙОСТАННІШОЇ збереженої сесії, де вона була —
+ * щоб показати «минулого разу» під час логування. null, якщо ще не робив.
+ */
+export async function getLastExerciseSets(
+  profileId: number,
+  exerciseId: number
+): Promise<{ date: number; sets: { weight: number; reps: number }[] } | null> {
+  const db = getDatabase();
+  const last = await db.getFirstAsync<{ id: number; started_at: number }>(
+    `SELECT s.id, s.started_at
+       FROM sessions s
+       JOIN session_sets ss ON ss.session_id = s.id AND ss.exercise_id = ?
+      WHERE s.profile_id = ?
+      ORDER BY s.started_at DESC
+      LIMIT 1`,
+    exerciseId,
+    profileId
+  );
+  if (!last) return null;
+
+  const sets = await db.getAllAsync<{ weight: number; reps: number }>(
+    `SELECT weight, reps FROM session_sets
+      WHERE session_id = ? AND exercise_id = ?
+      ORDER BY set_index`,
+    last.id,
+    exerciseId
+  );
+  return { date: last.started_at, sets };
+}
+
+/** Видалити сесію разом із її підходами. */
+export async function deleteSession(sessionId: number): Promise<void> {
+  const db = getDatabase();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      "DELETE FROM session_sets WHERE session_id = ?",
+      sessionId
+    );
+    await db.runAsync("DELETE FROM sessions WHERE id = ?", sessionId);
+  });
+}
+
+/** Повністю переписати підходи сесії (редагування минулого тренування). */
+export async function replaceSessionSets(
+  sessionId: number,
+  exercises: { exerciseId: number; sets: { weight: string; reps: string }[] }[]
+): Promise<void> {
+  const db = getDatabase();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      "DELETE FROM session_sets WHERE session_id = ?",
+      sessionId
+    );
+    for (const ex of exercises) {
+      let i = 0;
+      for (const s of ex.sets) {
+        const w = parseFloat(s.weight.replace(",", ".")) || 0;
+        const r = parseInt(s.reps, 10) || 0;
+        if (r <= 0) continue; // без повторів — не підхід; вага може бути 0
+        await db.runAsync(
+          "INSERT INTO session_sets (session_id, exercise_id, set_index, weight, reps, completed) VALUES (?, ?, ?, ?, ?, 1)",
+          sessionId,
+          ex.exerciseId,
+          i++,
+          w,
+          r
+        );
+      }
+    }
+  });
+}
+
+// ───────────────────────── Рекорди / прогрес ─────────────────────────
+
+export type ExerciseRecord = {
+  bestE1rm: number;
+  bestE1rmDate: number | null;
+  bestWeight: number;
+  bestWeightDate: number | null;
+};
+
+/** Рекорди по вправі (оцінка 1ПМ і макс. вага) з усієї історії профілю. */
+export async function getExerciseRecord(
+  profileId: number,
+  exerciseId: number
+): Promise<ExerciseRecord | null> {
+  const db = getDatabase();
+  const rows = await db.getAllAsync<{
+    weight: number;
+    reps: number;
+    started_at: number;
+  }>(
+    `SELECT ss.weight, ss.reps, s.started_at
+       FROM session_sets ss
+       JOIN sessions s ON s.id = ss.session_id
+      WHERE s.profile_id = ? AND ss.exercise_id = ? AND ss.weight > 0 AND ss.reps > 0`,
+    profileId,
+    exerciseId
+  );
+  if (rows.length === 0) return null;
+
+  const rec: ExerciseRecord = {
+    bestE1rm: 0,
+    bestE1rmDate: null,
+    bestWeight: 0,
+    bestWeightDate: null,
+  };
+  for (const r of rows) {
+    const e = epley1rm(r.weight, r.reps);
+    if (e > rec.bestE1rm) {
+      rec.bestE1rm = e;
+      rec.bestE1rmDate = r.started_at;
+    }
+    if (r.weight > rec.bestWeight) {
+      rec.bestWeight = r.weight;
+      rec.bestWeightDate = r.started_at;
+    }
+  }
+  return rec;
+}
+
+export type SessionRecord = {
+  exercise_id: number;
+  name: string;
+  weight: number; // підхід із найкращим 1ПМ цієї сесії
+  reps: number;
+  e1rm: number; // найкращий 1ПМ цієї сесії
+  prior_e1rm: number; // найкращий 1ПМ до цієї сесії (0 — вперше)
+  is_pr: boolean;
+};
+
+/** Які рекорди побито в конкретній сесії (для екрана завершення). */
+export async function getSessionRecords(
+  sessionId: number
+): Promise<SessionRecord[]> {
+  const db = getDatabase();
+  const head = await db.getFirstAsync<{
+    profile_id: number;
+    started_at: number;
+  }>("SELECT profile_id, started_at FROM sessions WHERE id = ?", sessionId);
+  if (!head) return [];
+
+  const rows = await db.getAllAsync<{
+    exercise_id: number;
+    weight: number;
+    reps: number;
+    name: string | null;
+  }>(
+    `SELECT ss.exercise_id, ss.weight, ss.reps,
+            COALESCE(NULLIF(e.name_uk, ''), e.name) AS name
+       FROM session_sets ss
+       LEFT JOIN exercises e ON e.id = ss.exercise_id
+      WHERE ss.session_id = ? AND ss.weight > 0 AND ss.reps > 0`,
+    sessionId
+  );
+
+  // Найкращий підхід (за 1ПМ) у цій сесії — по кожній вправі.
+  const best = new Map<number, SessionRecord>();
+  for (const r of rows) {
+    const e = epley1rm(r.weight, r.reps);
+    const cur = best.get(r.exercise_id);
+    if (!cur || e > cur.e1rm) {
+      best.set(r.exercise_id, {
+        exercise_id: r.exercise_id,
+        name: r.name ?? "Вправа",
+        weight: r.weight,
+        reps: r.reps,
+        e1rm: e,
+        prior_e1rm: 0,
+        is_pr: false,
+      });
+    }
+  }
+
+  // Порівнюємо з історією ДО цієї сесії.
+  const records = [...best.values()];
+  for (const rec of records) {
+    const prior = await db.getAllAsync<{ weight: number; reps: number }>(
+      `SELECT ss.weight, ss.reps
+         FROM session_sets ss
+         JOIN sessions s ON s.id = ss.session_id
+        WHERE s.profile_id = ? AND ss.exercise_id = ?
+          AND s.started_at < ? AND ss.weight > 0 AND ss.reps > 0`,
+      head.profile_id,
+      rec.exercise_id,
+      head.started_at
+    );
+    rec.prior_e1rm = bestE1rm(prior);
+    rec.is_pr = rec.e1rm > rec.prior_e1rm;
+  }
+
+  return records;
+}
+
+/** Прогрес оцінки 1ПМ по сесіях (для графіка деталей вправи). */
+export async function getExerciseProgress(
+  profileId: number,
+  exerciseId: number
+): Promise<{ date: number; e1rm: number }[]> {
+  const db = getDatabase();
+  const rows = await db.getAllAsync<{
+    started_at: number;
+    weight: number;
+    reps: number;
+  }>(
+    `SELECT s.started_at, ss.weight, ss.reps
+       FROM session_sets ss
+       JOIN sessions s ON s.id = ss.session_id
+      WHERE s.profile_id = ? AND ss.exercise_id = ? AND ss.weight > 0 AND ss.reps > 0
+      ORDER BY s.started_at`,
+    profileId,
+    exerciseId
+  );
+
+  // Найкращий 1ПМ кожної сесії.
+  const bySession = new Map<number, number>();
+  for (const r of rows) {
+    const e = epley1rm(r.weight, r.reps);
+    const cur = bySession.get(r.started_at) ?? 0;
+    if (e > cur) bySession.set(r.started_at, e);
+  }
+  return [...bySession.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([date, e1rm]) => ({ date, e1rm }));
 }
 
 /** Деталі сесії: вправи зі своїми підходами (назви — укр., якщо є). */

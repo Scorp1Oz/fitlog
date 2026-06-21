@@ -72,9 +72,14 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         i === exIdx
           ? {
               ...ex,
-              sets: ex.sets.map((st, j) =>
-                j === setIdx ? { ...st, ...patch } : st
-              ),
+              sets: ex.sets.map((st, j) => {
+                if (j !== setIdx) return st;
+                const next = { ...st, ...patch };
+                // Підхід виконаний, щойно вказані повтори. Вага опційна —
+                // деякі вправи (підтягування, скрючування) без обтяження.
+                next.completed = next.reps.trim() !== "";
+                return next;
+              }),
             }
           : ex
       ),
