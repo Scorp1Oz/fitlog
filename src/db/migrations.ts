@@ -3,6 +3,8 @@
 // щоб історія користувача переживала оновлення додатку.
 import type { SQLiteDatabase } from "expo-sqlite";
 
+import { translateExerciseName } from "@/exercises/exercise-names";
+
 export type Migration = {
   version: number;
   up: (db: SQLiteDatabase) => Promise<void>;
@@ -86,6 +88,53 @@ export const migrations: Migration[] = [
     version: 2,
     up: async (db) => {
       await db.execAsync("ALTER TABLE profiles ADD COLUMN avatar_uri TEXT;");
+    },
+  },
+
+  {
+    // v3 — програми: впорядкований розклад рутин по днях тижня. День без
+    // рядка в program_days = відпочинок. Активна програма (одна) — на профілі.
+    version: 3,
+    up: async (db) => {
+      await db.execAsync(`
+        CREATE TABLE programs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          profile_id INTEGER NOT NULL,
+          name TEXT,
+          created_at INTEGER
+        );
+
+        CREATE TABLE program_days (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          program_id INTEGER NOT NULL,
+          weekday INTEGER NOT NULL,   -- 0=Пн … 6=Нд
+          routine_id INTEGER NOT NULL
+        );
+
+        CREATE INDEX idx_programs_profile ON programs(profile_id);
+        CREATE INDEX idx_program_days_program ON program_days(program_id);
+
+        ALTER TABLE profiles ADD COLUMN active_program_id INTEGER;
+      `);
+    },
+  },
+
+  {
+    // v4 — український переклад назв базових вправ (name_uk). Беком для БД,
+    // засіяних до появи перекладача; нові інсталяції отримують name_uk одразу
+    // в seedExercises. Англійська name лишається — для перемикача мови.
+    version: 4,
+    up: async (db) => {
+      const rows = await db.getAllAsync<{ id: number; name: string }>(
+        "SELECT id, name FROM exercises WHERE name_uk IS NULL AND is_custom = 0"
+      );
+      for (const r of rows) {
+        await db.runAsync(
+          "UPDATE exercises SET name_uk = ? WHERE id = ?",
+          translateExerciseName(r.name),
+          r.id
+        );
+      }
     },
   },
 ];

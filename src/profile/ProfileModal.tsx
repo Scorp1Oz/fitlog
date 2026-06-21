@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -8,10 +9,14 @@ import {
 } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
+import { getActiveProgram, type ProgramDay } from "@/db/programs";
+import { WEEKDAYS_FULL, todayWeekday } from "@/lib/date";
 import { useTheme } from "@/theme/useTheme";
 
 import { Avatar } from "./Avatar";
 import { formatJoinDate, getDisplayName } from "./profile-helpers";
+
+type Active = { id: number; name: string | null; days: ProgramDay[] } | null;
 
 // Інформаційна модалка профілю — лише перегляд, без редагування.
 // Закриття: по хрестику або по тапу поза карткою. Редагування — у Налаштуваннях.
@@ -26,6 +31,17 @@ export function ProfileModal({
   const { colors } = useTheme();
   const { height } = useWindowDimensions();
   const name = getDisplayName(profile);
+
+  const [active, setActive] = useState<Active>(null);
+
+  // Активну програму вантажимо щоразу при відкритті (могла змінитися).
+  useEffect(() => {
+    if (!visible || !profile) return;
+    getActiveProgram(profile.id).then(setActive);
+  }, [visible, profile]);
+
+  const today = todayWeekday();
+  const todayDay = active?.days.find((d) => d.weekday === today) ?? null;
 
   return (
     <Modal
@@ -74,14 +90,24 @@ export function ProfileModal({
           <View className="my-5 h-px bg-border" />
 
           {/* Активна програма */}
-          <View className="flex-row items-baseline justify-between">
-            <Text className="font-mono text-[11px] tracking-[2px] text-lime">
-              АКТИВНА ПРОГРАМА
-            </Text>
-            <Text className="font-sans text-sm text-text-muted">
+          <Text className="font-mono text-[11px] tracking-[2px] text-lime">
+            АКТИВНА ПРОГРАМА
+          </Text>
+          {active ? (
+            <View className="mt-2">
+              <Text className="font-sans-strong text-base text-text">
+                {active.name ?? "Програма"}
+              </Text>
+              <Text className="mt-1 font-mono text-[11px] text-text-dim">
+                Сьогодні ({WEEKDAYS_FULL[today]}):{" "}
+                {todayDay ? todayDay.routine_name : "відпочинок"}
+              </Text>
+            </View>
+          ) : (
+            <Text className="mt-2 font-sans text-sm text-text-muted">
               не вибрана
             </Text>
-          </View>
+          )}
 
           {/* Простір під майбутні блоки */}
           <View className="flex-1" />

@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import PagerView, {
   type PagerViewOnPageSelectedEvent,
 } from "react-native-pager-view";
 
+import { FloatingCrosses } from "@/auth/FloatingCrosses";
 import { FloatingTabBar } from "@/components/FloatingTabBar";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { ScreenBackground } from "@/components/ScreenBackground";
@@ -28,9 +29,13 @@ export default function MainPager() {
     setPage(e.nativeEvent.position);
   };
 
+  const { width, height } = useWindowDimensions();
+
   return (
     <View className="flex-1 bg-bg">
       <ScreenBackground />
+      {/* Хрестики як на авторизації — фонова декорація за контентом. */}
+      <FloatingCrosses width={width} height={height} count={14} />
       <ProfileHeader />
 
       <View className="flex-1">

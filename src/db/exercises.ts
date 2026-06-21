@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 
+import { translateExerciseName } from "@/exercises/exercise-names";
+
 import { getDatabase } from "./database";
 
 // Картинки не вшиваємо — тягнемо за URL (expo-image кешує).
@@ -39,7 +41,7 @@ export async function seedExercises(db: SQLiteDatabase): Promise<void> {
 
   await db.withTransactionAsync(async () => {
     const stmt = await db.prepareAsync(
-      "INSERT INTO exercises (name, name_uk, primary_muscle, equipment, category, level, images, is_custom) VALUES (?, NULL, ?, ?, ?, ?, ?, 0)"
+      "INSERT INTO exercises (name, name_uk, primary_muscle, equipment, category, level, images, is_custom) VALUES (?, ?, ?, ?, ?, ?, ?, 0)"
     );
     try {
       for (const e of data) {
@@ -48,6 +50,7 @@ export async function seedExercises(db: SQLiteDatabase): Promise<void> {
         );
         await stmt.executeAsync(
           e.name,
+          translateExerciseName(e.name), // укр. назва (гібридний перекладач)
           e.primaryMuscles?.[0] ?? null,
           e.equipment || null,
           e.category ?? null,

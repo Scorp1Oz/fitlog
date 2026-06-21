@@ -34,6 +34,22 @@ export const MONTHS_GEN = [
 
 export const WEEKDAYS_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
+// Повні назви для розкладу програми (тиждень з понеділка).
+export const WEEKDAYS_FULL = [
+  "Понеділок",
+  "Вівторок",
+  "Середа",
+  "Четвер",
+  "П'ятниця",
+  "Субота",
+  "Неділя",
+];
+
+// Поточний день тижня з понеділка: 0=Пн … 6=Нд (Date.getDay() рахує з неділі).
+export function todayWeekday(): number {
+  return (new Date().getDay() + 6) % 7;
+}
+
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }

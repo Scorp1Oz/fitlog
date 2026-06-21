@@ -12,15 +12,17 @@ import { getDatabase } from "./database";
 export async function saveSession(
   profileId: number,
   startedAt: number,
-  exercises: WorkoutExercise[]
+  exercises: WorkoutExercise[],
+  routineId: number | null = null
 ): Promise<number> {
   const db = getDatabase();
   let sessionId = 0;
 
   await db.withTransactionAsync(async () => {
     const res = await db.runAsync(
-      "INSERT INTO sessions (profile_id, started_at, ended_at) VALUES (?, ?, ?)",
+      "INSERT INTO sessions (profile_id, routine_id, started_at, ended_at) VALUES (?, ?, ?, ?)",
       profileId,
+      routineId,
       startedAt,
       Date.now()
     );

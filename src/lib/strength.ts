@@ -30,3 +30,21 @@ export function formatSet(weight: number, reps: number): string {
 export function formatSetShort(weight: number, reps: number): string {
   return weight > 0 ? `${weight}×${reps}` : `${reps}`;
 }
+
+// Ціль вправи в рутині: «3 × 8–12 повт.». Будь-яка частина може бути відсутня.
+export function formatTarget(
+  sets: number | null,
+  repLow: number | null,
+  repHigh: number | null
+): string {
+  const s = sets ?? 0;
+  const lo = repLow ?? 0;
+  const hi = repHigh ?? 0;
+  let reps = "";
+  if (lo > 0 && hi > 0) reps = lo === hi ? `${lo}` : `${lo}–${hi}`;
+  else if (lo > 0) reps = `${lo}`;
+  else if (hi > 0) reps = `${hi}`;
+
+  if (!reps) return s > 0 ? `${s} підх.` : "";
+  return s > 0 ? `${s} × ${reps} повт.` : `${reps} повт.`;
+}

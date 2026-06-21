@@ -1,62 +1,72 @@
-// Декоративний шар: маленькі сірі хрестики, що повільно «літають».
-// Анімація на UI-потоці через react-native-reanimated (плавно, без лагів).
-import { useEffect, useMemo } from "react";
+// Декоративний шар: маленькі сірі хрестики. Кожен «живе» один цикл —
+// плавно з'являється, трохи дрейфує, зникає, після чого відроджується в
+// іншому випадковому місці. Анімація на UI-потоці (react-native-reanimated).
+import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
   interpolate,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withRepeat,
   withTiming,
 } from "react-native-reanimated";
 
 import { useTheme } from "@/theme/useTheme";
 
-type CrossConfig = {
-  startX: number;
-  startY: number;
-  driftX: number;
-  driftY: number;
-  size: number;
-  duration: number;
-  delay: number;
-  rotate: number;
-};
+const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
-function Cross({
-  startX,
-  startY,
-  driftX,
-  driftY,
-  size,
-  duration,
-  delay,
-  rotate,
-}: CrossConfig) {
+// Випадкові параметри одного «життя» хрестика (позиція, дрейф, розмір, оберт).
+function spawn(width: number, height: number) {
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height,
+    size: rand(8, 18),
+    driftX: rand(-1, 1) * 55,
+    driftY: rand(-1, 1) * 60,
+    rotate: rand(-1, 1) * 50,
+  };
+}
+
+function Cross({ width, height }: { width: number; height: number }) {
   const { colors } = useTheme();
-  // t повільно ходить 0↔1 туди-сюди по колу нескінченно.
-  const t = useSharedValue(0);
+  // Поточне «життя»: позиція й параметри руху. Змінюється при відродженні.
+  const [pos, setPos] = useState(() => spawn(width, height));
+  // life 0→1 — прогрес одного циклу (fade-in, дрейф, fade-out).
+  const life = useSharedValue(0);
+
+  const respawn = useCallback(
+    () => setPos(spawn(width, height)),
+    [width, height]
+  );
 
   useEffect(() => {
-    t.value = withDelay(
+    // Один прохід; коли завершився — відроджуємось в іншому місці.
+    // Коротший за попередній (рух помітно жвавіший).
+    const duration = rand(5000, 9000);
+    const delay = Math.random() * 2500; // стартовий розкид, щоб не блимали разом
+    life.value = 0;
+    life.value = withDelay(
       delay,
-      withRepeat(
-        withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }),
-        -1,
-        true
+      withTiming(
+        1,
+        { duration, easing: Easing.inOut(Easing.sin) },
+        (finished) => {
+          if (finished) runOnJS(respawn)();
+        }
       )
     );
-  }, [delay, duration, t]);
+  }, [pos, respawn, life]);
 
   const style = useAnimatedStyle(() => ({
     transform: [
-      { translateX: interpolate(t.value, [0, 1], [0, driftX]) },
-      { translateY: interpolate(t.value, [0, 1], [0, driftY]) },
-      { rotate: `${interpolate(t.value, [0, 1], [0, rotate])}deg` },
+      { translateX: interpolate(life.value, [0, 1], [0, pos.driftX]) },
+      { translateY: interpolate(life.value, [0, 1], [0, pos.driftY]) },
+      { rotate: `${interpolate(life.value, [0, 1], [0, pos.rotate])}deg` },
     ],
-    opacity: interpolate(t.value, [0, 1], [0.12, 0.4]),
+    // З'являється на початку, тримається, зникає в кінці.
+    opacity: interpolate(life.value, [0, 0.2, 0.8, 1], [0, 0.4, 0.4, 0]),
   }));
 
   return (
@@ -64,10 +74,10 @@ function Cross({
       style={[
         {
           position: "absolute",
-          left: startX,
-          top: startY,
+          left: pos.x,
+          top: pos.y,
           color: colors.textMuted,
-          fontSize: size,
+          fontSize: pos.size,
           fontWeight: "300",
         },
         style,
@@ -87,28 +97,10 @@ export function FloatingCrosses({
   height: number;
   count?: number;
 }) {
-  // Випадкові параметри рахуємо один раз (поки незмінні розмір і кількість).
-  const crosses = useMemo<CrossConfig[]>(
-    () =>
-      Array.from({ length: count }).map(() => ({
-        startX: Math.random() * width,
-        startY: Math.random() * height,
-        // Дрейф у обидва боки → хрестик лишається біля місця появи,
-        // тож розподіл по екрану рівномірний (нижня смуга не оголюється).
-        driftX: (Math.random() - 0.5) * 45,
-        driftY: (Math.random() - 0.5) * 50,
-        size: 8 + Math.random() * 10,
-        duration: 12000 + Math.random() * 13000,
-        delay: Math.random() * 5000,
-        rotate: (Math.random() - 0.5) * 40,
-      })),
-    [count, width, height]
-  );
-
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {crosses.map((cross, i) => (
-        <Cross key={i} {...cross} />
+      {Array.from({ length: count }).map((_, i) => (
+        <Cross key={i} width={width} height={height} />
       ))}
     </View>
   );

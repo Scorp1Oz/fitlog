@@ -13,13 +13,32 @@ export type WorkoutExercise = {
   exerciseId: number;
   name: string;
   sets: WorkoutSet[];
+  // Цілі з рутини (лише для режиму 'routine' — підказки в runner'і).
+  targetSets?: number;
+  repLow?: number;
+  repHigh?: number;
 };
+
+// Як почалася сесія: вільне тренування чи виконання рутини.
+export type WorkoutMode = "free" | "routine";
 
 type WorkoutState = {
   startedAt: number | null;
+  mode: WorkoutMode;
+  routineId: number | null;
   exercises: WorkoutExercise[];
 
   start: () => void;
+  startFromRoutine: (
+    routineId: number,
+    items: {
+      exerciseId: number;
+      name: string;
+      targetSets: number;
+      repLow: number;
+      repHigh: number;
+    }[]
+  ) => void;
   cancel: () => void;
   isActive: () => boolean;
 
@@ -35,15 +54,37 @@ const emptySet = (): WorkoutSet => ({ weight: "", reps: "", completed: false });
 
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   startedAt: null,
+  mode: "free",
+  routineId: null,
   exercises: [],
 
   start: () => {
     // Якщо сесія вже триває — не скидаємо її.
     if (get().startedAt) return;
-    set({ startedAt: Date.now(), exercises: [] });
+    set({ startedAt: Date.now(), mode: "free", routineId: null, exercises: [] });
   },
 
-  cancel: () => set({ startedAt: null, exercises: [] }),
+  startFromRoutine: (routineId, items) => {
+    // Якщо сесія вже триває — не перезаписуємо її.
+    if (get().startedAt) return;
+    set({
+      startedAt: Date.now(),
+      mode: "routine",
+      routineId,
+      exercises: items.map((it) => ({
+        exerciseId: it.exerciseId,
+        name: it.name,
+        targetSets: it.targetSets,
+        repLow: it.repLow,
+        repHigh: it.repHigh,
+        // Стільки порожніх підходів, скільки в шаблоні (мінімум 1).
+        sets: Array.from({ length: Math.max(1, it.targetSets) }, emptySet),
+      })),
+    });
+  },
+
+  cancel: () =>
+    set({ startedAt: null, mode: "free", routineId: null, exercises: [] }),
 
   isActive: () => get().startedAt !== null,
 
