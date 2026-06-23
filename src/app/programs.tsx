@@ -15,8 +15,12 @@ import { useTheme } from "@/theme/useTheme";
 
 export default function ProgramsScreen() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, updateProfile } = useAuth();
   const { colors } = useTheme();
+
+  // Кнопка «Показові плани» зникає після першого натискання назавжди
+  // (прапорець у профілі). Відновити її можна в Налаштуваннях.
+  const demoHidden = !!profile?.demo_hidden;
 
   const [programs, setPrograms] = useState<ProgramSummary[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -44,6 +48,8 @@ export default function ProgramsScreen() {
       const added = await seedDemoPlans(profile.id);
       if (added) reload();
       else Alert.alert("Показові плани", "Їх уже додано.");
+      // Після першого натискання кнопка ховається назавжди.
+      await updateProfile({ demoHidden: true });
     } catch (e) {
       Alert.alert("Помилка", String(e));
     } finally {
@@ -114,15 +120,17 @@ export default function ProgramsScreen() {
       </ScrollView>
 
       <View className="gap-3 px-4 pt-2 pb-8">
-        <Pressable
-          onPress={loadDemos}
-          disabled={seeding}
-          className="items-center rounded-2xl border border-lime py-3.5 active:opacity-70"
-        >
-          <Text className="font-sans-strong text-lime">
-            {seeding ? "ДОДАЮ…" : "ПОКАЗОВІ ПЛАНИ"}
-          </Text>
-        </Pressable>
+        {!demoHidden ? (
+          <Pressable
+            onPress={loadDemos}
+            disabled={seeding}
+            className="items-center rounded-2xl border border-lime py-3.5 active:opacity-70"
+          >
+            <Text className="font-sans-strong text-lime">
+              {seeding ? "ДОДАЮ…" : "ПОКАЗОВІ ПЛАНИ"}
+            </Text>
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={() => router.push("/program-edit")}
           className="items-center rounded-2xl bg-lime py-4 active:opacity-80"

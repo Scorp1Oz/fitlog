@@ -137,4 +137,48 @@ export const migrations: Migration[] = [
       }
     },
   },
+
+  {
+    // v5 — пробіжки (GPS). runs — підсумок, run_points — трек (послідовність
+    // координат із часом). Дистанція в метрах, темп — секунд на км.
+    version: 5,
+    up: async (db) => {
+      await db.execAsync(`
+        CREATE TABLE runs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          profile_id INTEGER NOT NULL,
+          started_at INTEGER NOT NULL,
+          ended_at INTEGER,
+          distance_m REAL DEFAULT 0,
+          duration_s INTEGER DEFAULT 0,
+          avg_pace REAL DEFAULT 0,   -- секунд на км
+          notes TEXT
+        );
+
+        CREATE TABLE run_points (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          run_id INTEGER NOT NULL,
+          seq INTEGER NOT NULL,
+          lat REAL NOT NULL,
+          lng REAL NOT NULL,
+          t INTEGER NOT NULL
+        );
+
+        CREATE INDEX idx_runs_profile ON runs(profile_id);
+        CREATE INDEX idx_run_points_run ON run_points(run_id);
+      `);
+    },
+  },
+
+  {
+    // v6 — поле дати народження (ISO 'YYYY-MM-DD') і прапорець «сховати кнопку
+    // показових планів» (1 = схована; відновлюється в налаштуваннях).
+    version: 6,
+    up: async (db) => {
+      await db.execAsync(`
+        ALTER TABLE profiles ADD COLUMN birthdate TEXT;
+        ALTER TABLE profiles ADD COLUMN demo_hidden INTEGER DEFAULT 0;
+      `);
+    },
+  },
 ];

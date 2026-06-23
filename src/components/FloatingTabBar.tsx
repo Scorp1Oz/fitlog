@@ -13,16 +13,19 @@ type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 const TABS: { icon: IconName; label: string }[] = [
   { icon: "home-variant-outline", label: "ГОЛОВНИЙ" },
   { icon: "dumbbell", label: "ТРЕНУВАННЯ" },
-  { icon: "chart-line", label: "АНАЛІТИКА" },
   { icon: "image-filter-hdr", label: "БІГ" },
+  { icon: "chart-line", label: "АНАЛІТИКА" },
 ];
 
 export function FloatingTabBar({
   index,
   onChange,
+  locked = false,
 }: {
   index: number;
   onChange: (i: number) => void;
+  // Під час забігу таб-бар приглушений і не реагує на тапи.
+  locked?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -34,11 +37,14 @@ export function FloatingTabBar({
       style={{ paddingBottom: insets.bottom + 12 }}
     >
       {/* gap між іконками = px від країв → однакові відступи; ширина по контенту. */}
-      <View className="flex-row items-center gap-7 rounded-3xl border border-border bg-surface px-7 py-3">
+      <View
+        className="flex-row items-center gap-7 rounded-3xl border border-border bg-surface px-7 py-3"
+        style={{ opacity: locked ? 0.4 : 1 }}>
         {TABS.map((tab, i) => (
           <Pressable
             key={tab.label}
             onPress={() => onChange(i)}
+            disabled={locked}
             accessibilityLabel={tab.label}
             hitSlop={8}
             className="items-center justify-center py-1"

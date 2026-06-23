@@ -47,6 +47,8 @@ type AuthValue = {
   updateProfile: (fields: {
     displayName?: string | null;
     avatarUri?: string | null;
+    birthdate?: string | null;
+    demoHidden?: boolean;
   }) => Promise<void>;
 };
 
@@ -122,6 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (fields: {
     displayName?: string | null;
     avatarUri?: string | null;
+    birthdate?: string | null;
+    demoHidden?: boolean;
   }): Promise<void> => {
     if (!profile) return;
     const updated = await updateProfileInDb(profile.id, fields);

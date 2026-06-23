@@ -83,6 +83,24 @@ export function formatTime(ts: number): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Повних років від дати народження 'YYYY-MM-DD'. null — якщо дата порожня
+// або некоректна (в т.ч. у майбутньому).
+export function ageFromBirthdate(birthdate: string | null): number | null {
+  if (!birthdate) return null;
+  const [y, m, d] = birthdate.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const dob = new Date(y, m - 1, d);
+  if (Number.isNaN(dob.getTime())) return null;
+  const now = new Date();
+  if (dob > now) return null;
+  let age = now.getFullYear() - dob.getFullYear();
+  const beforeBirthday =
+    now.getMonth() < dob.getMonth() ||
+    (now.getMonth() === dob.getMonth() && now.getDate() < dob.getDate());
+  if (beforeBirthday) age -= 1;
+  return age;
+}
+
 // «1 год 5 хв» / «45 хв» / «—» якщо невідомо.
 export function formatDuration(ms: number | null): string {
   if (!ms || ms <= 0) return "—";

@@ -8,10 +8,13 @@ import { useLock } from "@/lock/LockContext";
 import { useTheme } from "@/theme/useTheme";
 
 export default function Settings() {
-  const { logout } = useAuth();
+  const { logout, profile, updateProfile } = useAuth();
   const { enabled, setEnabled, biometricsAvailable } = useLock();
   const { colors } = useTheme();
   const router = useRouter();
+
+  // Перемикач показує саму кнопку «Показові плани» на екрані Програм.
+  const demoVisible = !profile?.demo_hidden;
 
   return (
     <View className="flex-1 bg-bg">
@@ -37,6 +40,22 @@ export default function Settings() {
             onValueChange={setEnabled}
             trackColor={{ false: colors.faint, true: colors.limeTrack }}
             thumbColor={enabled ? colors.lime : colors.text}
+            ios_backgroundColor={colors.faint}
+          />
+        </View>
+
+        <View className="flex-row items-center justify-between border-b border-border pb-4">
+          <View className="flex-1 pr-3">
+            <Text className="font-sans text-text">Кнопка «Показові плани»</Text>
+            <Text className="mt-0.5 font-mono text-[10px] text-text-dim">
+              Показувати на екрані «Програми»
+            </Text>
+          </View>
+          <Switch
+            value={demoVisible}
+            onValueChange={(v) => updateProfile({ demoHidden: !v })}
+            trackColor={{ false: colors.faint, true: colors.limeTrack }}
+            thumbColor={demoVisible ? colors.lime : colors.text}
             ios_backgroundColor={colors.faint}
           />
         </View>

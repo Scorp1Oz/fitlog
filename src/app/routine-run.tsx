@@ -23,11 +23,13 @@ import {
   saveSession,
 } from "@/db/sessions";
 import { formatShortDate } from "@/lib/date";
+import { mvs, vs } from "@/lib/responsive";
 import { formatSetShort, formatTarget } from "@/lib/strength";
 import { useTheme } from "@/theme/useTheme";
 import { RestBar } from "@/workout/RestBar";
 import { RestMenu } from "@/workout/RestMenu";
 import { useRestSettings } from "@/workout/rest-settings";
+import { useRestNotification } from "@/workout/useRestNotification";
 import { useWorkoutStore } from "@/workout/workout-store";
 
 type LastSets = { date: number; sets: { weight: number; reps: number }[] } | null;
@@ -112,6 +114,9 @@ export default function RoutineRun() {
       }
     }
   }, [now, restEndsAt, beep, muted]);
+
+  // Фонове сповіщення «відпочинок завершено» — працює і при згорнутому застосунку.
+  useRestNotification(restEndsAt);
 
   // Захист: екран має сенс лише для активної рутинної сесії.
   useEffect(() => {
@@ -285,7 +290,11 @@ export default function RoutineRun() {
         >
           {/* Картка поточної вправи */}
           <View className="mt-4 rounded-2xl border border-border bg-surface p-4">
-            <Text className="font-display text-3xl text-text" numberOfLines={2}>
+            <Text
+              className="font-display text-text"
+              style={{ fontSize: mvs(26), lineHeight: mvs(28) }}
+              numberOfLines={2}
+            >
               {ex.name}
             </Text>
 
@@ -430,19 +439,21 @@ export default function RoutineRun() {
           <Pressable
             onPress={goPrev}
             disabled={exIdx === 0}
-            className={`flex-1 flex-row items-center justify-center gap-1 rounded-2xl border py-4 ${
+            className={`flex-1 flex-row items-center justify-center gap-1 rounded-2xl border ${
               exIdx === 0 ? "border-border" : "border-border active:opacity-70"
             }`}
+            style={{ paddingVertical: vs(14) }}
           >
             <MaterialCommunityIcons
               name="chevron-left"
-              size={20}
+              size={mvs(20)}
               color={exIdx === 0 ? colors.faint : colors.textMuted}
             />
             <Text
               className={`font-sans-strong ${
                 exIdx === 0 ? "text-text-dim" : "text-text-muted"
               }`}
+              style={{ fontSize: mvs(14) }}
             >
               Назад
             </Text>
@@ -451,23 +462,31 @@ export default function RoutineRun() {
           {isLast ? (
             <Pressable
               onPress={onFinish}
-              className="flex-[1.4] items-center rounded-2xl bg-lime py-4 active:opacity-80"
+              className="flex-[1.4] items-center rounded-2xl bg-lime active:opacity-80"
+              style={{ paddingVertical: vs(14) }}
             >
-              <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+              <Text
+                className="font-sans-strong tracking-[1px] text-on-lime"
+                style={{ fontSize: mvs(15) }}
+              >
                 ЗАВЕРШИТИ
               </Text>
             </Pressable>
           ) : (
             <Pressable
               onPress={goNext}
-              className="flex-[1.4] flex-row items-center justify-center gap-1 rounded-2xl bg-lime py-4 active:opacity-80"
+              className="flex-[1.4] flex-row items-center justify-center gap-1 rounded-2xl bg-lime active:opacity-80"
+              style={{ paddingVertical: vs(14) }}
             >
-              <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+              <Text
+                className="font-sans-strong tracking-[1px] text-on-lime"
+                style={{ fontSize: mvs(15) }}
+              >
                 ДАЛІ
               </Text>
               <MaterialCommunityIcons
                 name="chevron-right"
-                size={20}
+                size={mvs(20)}
                 color={colors.onLime}
               />
             </Pressable>

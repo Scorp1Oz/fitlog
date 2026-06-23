@@ -24,11 +24,13 @@ import {
   saveSession,
 } from "@/db/sessions";
 import { formatShortDate } from "@/lib/date";
+import { mvs, vs } from "@/lib/responsive";
 import { formatSetShort } from "@/lib/strength";
 import { useTheme } from "@/theme/useTheme";
 import { RestBar } from "@/workout/RestBar";
 import { RestMenu } from "@/workout/RestMenu";
 import { useRestSettings } from "@/workout/rest-settings";
+import { useRestNotification } from "@/workout/useRestNotification";
 import { useWorkoutStore } from "@/workout/workout-store";
 
 // «минулого разу» для вправи: дата + підходи (null — ще не робив).
@@ -118,6 +120,10 @@ export default function WorkoutSession() {
       }
     }
   }, [now, restEndsAt, beep, muted]);
+
+  // Фонове сповіщення: сигнал «відпочинок завершено» спрацює, навіть коли
+  // застосунок згорнутий (JS-таймер у фоні стоїть).
+  useRestNotification(restEndsAt);
 
   // Захист: якщо екран відкрили без активної сесії (не через нашу кнопку) —
   // повертаємось назад. Якщо вихід ініціювали ми самі — не дублюємо back.
@@ -423,9 +429,12 @@ export default function WorkoutSession() {
               requestPick((ex) => addExercise(ex));
               router.push("/exercises?pick=1");
             }}
-            className="mt-4 items-center rounded-2xl border border-lime py-3.5 active:opacity-70"
+            className="mt-4 items-center rounded-2xl border border-lime active:opacity-70"
+            style={{ paddingVertical: vs(12) }}
           >
-            <Text className="font-sans-strong text-lime">+ ДОДАТИ ВПРАВУ</Text>
+            <Text className="font-sans-strong text-lime" style={{ fontSize: mvs(14) }}>
+              + ДОДАТИ ВПРАВУ
+            </Text>
           </Pressable>
         </ScrollView>
 
@@ -433,9 +442,13 @@ export default function WorkoutSession() {
         <View className="px-4 pt-2" style={{ paddingBottom: insets.bottom + 12 }}>
           <Pressable
             onPress={onFinish}
-            className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
+            className="items-center rounded-2xl bg-lime active:opacity-80"
+            style={{ paddingVertical: vs(14) }}
           >
-            <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+            <Text
+              className="font-sans-strong tracking-[1px] text-on-lime"
+              style={{ fontSize: mvs(15) }}
+            >
               ЗАВЕРШИТИ
             </Text>
           </Pressable>

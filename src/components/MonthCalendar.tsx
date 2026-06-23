@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
+import { listRunDates } from "@/db/runs";
 import { listWorkoutDates } from "@/db/sessions";
 import { MONTHS_NOM, toDateKey, WEEKDAYS_SHORT } from "@/lib/date";
 import { useTheme } from "@/theme/useTheme";
@@ -23,9 +24,14 @@ export function MonthCalendar() {
     if (!profile) return;
     const from = new Date(year, month, 1).getTime();
     const to = new Date(year, month + 1, 1).getTime();
-    listWorkoutDates(profile.id, from, to).then((ts) => {
+    // Підсвічуємо дні, де є тренування АБО пробіжки.
+    Promise.all([
+      listWorkoutDates(profile.id, from, to),
+      listRunDates(profile.id, from, to),
+    ]).then(([workouts, runs]) => {
       const s = new Set<number>();
-      for (const t of ts) s.add(new Date(t).getDate());
+      for (const t of workouts) s.add(new Date(t).getDate());
+      for (const t of runs) s.add(new Date(t).getDate());
       setDays(s);
     });
   }, [profile, year, month]);

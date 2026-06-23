@@ -19,6 +19,8 @@ import { CurtainOverlay } from "@/components/CurtainOverlay";
 import { DbProvider } from "@/db/DbProvider";
 import { LockGate } from "@/lock/LockGate";
 import { LockProvider } from "@/lock/LockContext";
+import { LocationBootstrap } from "@/run/LocationBootstrap";
+import "@/run/run-task"; // реєструє фоновий таск локації на старті
 import { colors } from "@/theme/colors";
 
 // Не ховати екран-заставку, поки шрифти не завантажились.
@@ -69,6 +71,7 @@ export default function RootLayout() {
           </AuthGate>
           <CurtainOverlay />
           <ConfirmDialog />
+          <LocationBootstrap />
         </LockProvider>
       </AuthProvider>
     </DbProvider>

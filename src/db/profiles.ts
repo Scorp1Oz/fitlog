@@ -9,6 +9,8 @@ export type Profile = {
   username: string; // логін (незмінний)
   display_name: string | null; // редаговане ім'я
   avatar_uri: string | null; // локальний URI фото або null
+  birthdate: string | null; // дата народження 'YYYY-MM-DD' або null
+  demo_hidden: number; // 1 = кнопка «Показові плани» схована
   created_at: number;
 };
 
@@ -24,6 +26,8 @@ function toProfile(row: ProfileRow): Profile {
     username: row.username,
     display_name: row.display_name,
     avatar_uri: row.avatar_uri,
+    birthdate: row.birthdate ?? null,
+    demo_hidden: row.demo_hidden ?? 0,
     created_at: row.created_at,
   };
 }
@@ -62,6 +66,8 @@ export async function createProfile(
     username,
     display_name: username,
     avatar_uri: null,
+    birthdate: null,
+    demo_hidden: 0,
     created_at: createdAt,
   };
 }
@@ -97,11 +103,16 @@ export async function getProfileById(id: number): Promise<Profile | null> {
 /** Оновити ім'я та/або фото. Передавай лише те, що змінюєш. Повертає свіжий профіль. */
 export async function updateProfile(
   id: number,
-  fields: { displayName?: string | null; avatarUri?: string | null }
+  fields: {
+    displayName?: string | null;
+    avatarUri?: string | null;
+    birthdate?: string | null;
+    demoHidden?: boolean;
+  }
 ): Promise<Profile | null> {
   const db = getDatabase();
   const sets: string[] = [];
-  const values: (string | null)[] = [];
+  const values: (string | number | null)[] = [];
 
   if (fields.displayName !== undefined) {
     sets.push("display_name = ?");
@@ -110,6 +121,14 @@ export async function updateProfile(
   if (fields.avatarUri !== undefined) {
     sets.push("avatar_uri = ?");
     values.push(fields.avatarUri);
+  }
+  if (fields.birthdate !== undefined) {
+    sets.push("birthdate = ?");
+    values.push(fields.birthdate);
+  }
+  if (fields.demoHidden !== undefined) {
+    sets.push("demo_hidden = ?");
+    values.push(fields.demoHidden ? 1 : 0);
   }
 
   if (sets.length > 0) {
