@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import {
   createRoutine,
@@ -256,15 +257,17 @@ export default function RoutineEditScreen() {
           <Text className="font-sans-strong text-lime">+ ДОДАТИ ВПРАВУ</Text>
         </Pressable>
 
-        <Pressable
-          onPress={save}
-          disabled={busy}
-          className="mt-8 items-center rounded-2xl bg-lime py-4 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
-            ЗБЕРЕГТИ РУТИНУ
-          </Text>
-        </Pressable>
+        <LimeGlow className="mt-8">
+          <Pressable
+            onPress={save}
+            disabled={busy}
+            className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+              ЗБЕРЕГТИ РУТИНУ
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </ScrollView>
     </View>
   );

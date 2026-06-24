@@ -91,6 +91,30 @@ export async function listWorkoutDates(
   return rows.map((r) => r.started_at);
 }
 
+/**
+ * Мітки часу всіх активностей (тренування + пробіжки) у проміжку [from, to) —
+ * для обчислення стріку днів поспіль. Обʼєднуємо обидві таблиці.
+ */
+export async function listActivityDates(
+  profileId: number,
+  from: number,
+  to: number
+): Promise<number[]> {
+  const db = getDatabase();
+  const rows = await db.getAllAsync<{ started_at: number }>(
+    `SELECT started_at FROM sessions WHERE profile_id = ? AND started_at >= ? AND started_at < ?
+     UNION ALL
+     SELECT started_at FROM runs WHERE profile_id = ? AND started_at >= ? AND started_at < ?`,
+    profileId,
+    from,
+    to,
+    profileId,
+    from,
+    to
+  );
+  return rows.map((r) => r.started_at);
+}
+
 /** Сесії конкретного дня з підсумком (для списку тренувань дня). */
 export async function listSessionsByDay(
   profileId: number,

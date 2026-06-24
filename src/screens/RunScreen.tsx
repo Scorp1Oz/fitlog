@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/auth/AuthContext";
 import { useCurtain } from "@/components/CurtainOverlay";
@@ -26,6 +27,7 @@ function fmtElapsed(ms: number): string {
 export function RunScreen() {
   const { profile } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const playCurtain = useCurtain((s) => s.play);
 
   const status = useRunStore((s) => s.status);
@@ -55,39 +57,53 @@ export function RunScreen() {
     }
   };
 
-  const onStop = async () => {
-    const data = await stopRun();
-    if (data && data.points.length > 1 && profile) {
-      // Збережена пробіжка зʼявиться в календарі (вкладка «Аналітика»).
-      const id = await saveRun(profile.id, data);
-      // Лаймова завіса, як при завершенні тренування; під нею — перехід
-      // на екран підсумку пробіжки.
-      playCurtain(() => router.push(`/run-summary?id=${id}`));
-    }
+  const onStop = () => {
+    // Завісу піднімаємо ОДРАЗУ: карта забігу лишається на екрані, поки лаймова
+    // завіса йде вгору (≈0.7с) — без миготіння стандартним екраном кардіо.
+    // Саму зупинку, збереження й перехід робимо вже під завісою.
+    playCurtain(async () => {
+      const data = await stopRun();
+      if (data && data.points.length > 1 && profile) {
+        // Збережена пробіжка зʼявиться в календарі (вкладка «Аналітика»).
+        const id = await saveRun(profile.id, data);
+        router.push(`/run-summary?id=${id}`);
+      }
+    });
   };
 
-  // ── Активна пробіжка: статистика + карта-маршрут ──
+  // ── Активна пробіжка: карта на весь екран, показники — плаваючі бари ──
   if (running) {
     return (
       <View className="flex-1">
-        {/* Живі показники */}
-        <View className="flex-row justify-around px-4 py-3">
-          <Stat label="ЧАС" value={fmtElapsed(elapsedMs)} />
-          <Stat label="ДИСТАНЦІЯ" value={formatDistance(distanceM)} />
-          <Stat label="ТЕМП" value={formatPace(pace)} />
-        </View>
-
-        {/* Карта */}
-        <View className="mx-4 flex-1 overflow-hidden rounded-3xl border border-border">
+        {/* Карта-фон на всю площу (меню тим часом їде за екран) */}
+        <View className="absolute inset-0 overflow-hidden">
           <RunMap points={points} withRoute />
         </View>
 
-        {/* Стоп */}
-        <View className="px-4 pt-3" style={{ paddingBottom: vs(110) }}>
+        {/* Живі показники — бари з напівпрозорим тлом і лаймовим контуром.
+            Опускаємо нижче статус-бара/камери (safe-area top). */}
+        <View
+          pointerEvents="none"
+          className="absolute inset-x-0 top-0 flex-row gap-2 px-3"
+          style={{ paddingTop: insets.top + vs(10) }}
+        >
+          <StatBar label="ЧАС" value={fmtElapsed(elapsedMs)} />
+          <StatBar label="ДИСТАНЦІЯ" value={formatDistance(distanceM)} />
+          <StatBar label="ТЕМП" value={formatPace(pace)} />
+        </View>
+
+        {/* Стоп — плаваюча кнопка знизу (меню сховане), трохи піднята */}
+        <View
+          className="absolute inset-x-0 bottom-0 px-4"
+          style={{ paddingBottom: insets.bottom + vs(28) }}
+        >
           <Pressable
             onPress={onStop}
             className="items-center rounded-2xl bg-orange active:opacity-80"
-            style={{ paddingVertical: vs(14) }}
+            style={{
+              paddingVertical: vs(14),
+              boxShadow: "0px 6px 20px 0px rgba(0,0,0,0.45)",
+            }}
           >
             <Text
               className="font-sans-strong tracking-[1px] text-on-lime"
@@ -147,17 +163,17 @@ export function RunScreen() {
   );
 }
 
-// Один показник у рядку статистики активної пробіжки.
-function Stat({ label, value }: { label: string; value: string }) {
+// Плаваючий бар-показник поверх карти: напівпрозоре тло + лаймовий контур.
+function StatBar({ label, value }: { label: string; value: string }) {
   return (
-    <View className="items-center">
+    <View className="flex-1 items-center rounded-2xl border border-lime bg-black/45 py-2.5">
       <Text
         className="font-display text-text"
-        style={{ fontSize: mvs(28), lineHeight: mvs(30) }}
+        style={{ fontSize: mvs(24), lineHeight: mvs(26) }}
       >
         {value}
       </Text>
-      <Text className="mt-1 font-mono text-[10px] tracking-[2px] text-text-dim">
+      <Text className="mt-0.5 font-mono text-[9px] tracking-[2px] text-text-dim">
         {label}
       </Text>
     </View>

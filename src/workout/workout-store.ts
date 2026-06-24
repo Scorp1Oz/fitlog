@@ -39,6 +39,18 @@ type WorkoutState = {
       repHigh: number;
     }[]
   ) => void;
+  // Безумовний запуск рутини: скидає будь-яку поточну сесію й починає нову
+  // (для випадку, коли користувач свідомо погодився втратити незавершене).
+  replaceFromRoutine: (
+    routineId: number,
+    items: {
+      exerciseId: number;
+      name: string;
+      targetSets: number;
+      repLow: number;
+      repHigh: number;
+    }[]
+  ) => void;
   cancel: () => void;
   isActive: () => boolean;
 
@@ -51,6 +63,33 @@ type WorkoutState = {
 };
 
 const emptySet = (): WorkoutSet => ({ weight: "", reps: "", completed: false });
+
+// Свіжий стан рутинної сесії з елементів рутини (спільне для start/replace).
+function buildRoutineSession(
+  routineId: number,
+  items: {
+    exerciseId: number;
+    name: string;
+    targetSets: number;
+    repLow: number;
+    repHigh: number;
+  }[]
+) {
+  return {
+    startedAt: Date.now(),
+    mode: "routine" as WorkoutMode,
+    routineId,
+    exercises: items.map((it) => ({
+      exerciseId: it.exerciseId,
+      name: it.name,
+      targetSets: it.targetSets,
+      repLow: it.repLow,
+      repHigh: it.repHigh,
+      // Стільки порожніх підходів, скільки в шаблоні (мінімум 1).
+      sets: Array.from({ length: Math.max(1, it.targetSets) }, emptySet),
+    })),
+  };
+}
 
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   startedAt: null,
@@ -67,20 +106,12 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   startFromRoutine: (routineId, items) => {
     // Якщо сесія вже триває — не перезаписуємо її.
     if (get().startedAt) return;
-    set({
-      startedAt: Date.now(),
-      mode: "routine",
-      routineId,
-      exercises: items.map((it) => ({
-        exerciseId: it.exerciseId,
-        name: it.name,
-        targetSets: it.targetSets,
-        repLow: it.repLow,
-        repHigh: it.repHigh,
-        // Стільки порожніх підходів, скільки в шаблоні (мінімум 1).
-        sets: Array.from({ length: Math.max(1, it.targetSets) }, emptySet),
-      })),
-    });
+    set(buildRoutineSession(routineId, items));
+  },
+
+  replaceFromRoutine: (routineId, items) => {
+    // Безумовно: скидаємо поточну сесію й починаємо нову рутину.
+    set(buildRoutineSession(routineId, items));
   },
 
   cancel: () =>

@@ -7,10 +7,10 @@ import { useAuth } from "@/auth/AuthContext";
 import { LimeGlow } from "@/components/LimeGlow";
 import { ScreenTitle } from "@/components/ScreenTitle";
 import { getActiveProgram, type ProgramDay } from "@/db/programs";
-import { getRoutineDetail } from "@/db/routines";
 import { WEEKDAYS_FULL, todayWeekday } from "@/lib/date";
 import { mvs, vs } from "@/lib/responsive";
 import { useTheme } from "@/theme/useTheme";
+import { useStartRoutine } from "@/workout/useStartRoutine";
 import { useWorkoutStore } from "@/workout/workout-store";
 
 type Active = { id: number; name: string | null; days: ProgramDay[] } | null;
@@ -20,7 +20,7 @@ export function WorkoutScreen() {
   const { profile } = useAuth();
   const { colors } = useTheme();
   const start = useWorkoutStore((s) => s.start);
-  const startFromRoutine = useWorkoutStore((s) => s.startFromRoutine);
+  const startRoutine = useStartRoutine();
 
   const [active, setActive] = useState<Active>(null);
 
@@ -34,22 +34,6 @@ export function WorkoutScreen() {
   const startFreeWorkout = () => {
     start(); // не скидає, якщо сесія вже триває
     router.push("/workout-session");
-  };
-
-  // Запуск тренування за рутиною дня програми.
-  const startRoutine = async (routineId: number) => {
-    const d = await getRoutineDetail(routineId);
-    startFromRoutine(
-      routineId,
-      d.exercises.map((ex) => ({
-        exerciseId: ex.exercise_id,
-        name: ex.name,
-        targetSets: ex.target_sets ?? 1,
-        repLow: ex.rep_low ?? 0,
-        repHigh: ex.rep_high ?? 0,
-      }))
-    );
-    router.push("/routine-run");
   };
 
   const today = todayWeekday();

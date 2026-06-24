@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import { listRoutines, type RoutineSummary } from "@/db/routines";
 import { useTheme } from "@/theme/useTheme";
@@ -78,14 +79,16 @@ export default function RoutinesScreen() {
 
       {/* Низ: створити нову рутину */}
       <View className="px-4 pt-2 pb-8">
-        <Pressable
-          onPress={() => router.push("/routine-edit")}
-          className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
-            + НОВА РУТИНА
-          </Text>
-        </Pressable>
+        <LimeGlow>
+          <Pressable
+            onPress={() => router.push("/routine-edit")}
+            className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+              + НОВА РУТИНА
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </View>
     </View>
   );

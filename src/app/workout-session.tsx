@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/auth/AuthContext";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useCurtain } from "@/components/CurtainOverlay";
+import { LimeGlow } from "@/components/LimeGlow";
 import { usePicker } from "@/exercises/picker";
 import {
   countCompletedSets,
@@ -440,18 +441,20 @@ export default function WorkoutSession() {
 
         {/* Низ: завершення */}
         <View className="px-4 pt-2" style={{ paddingBottom: insets.bottom + 12 }}>
-          <Pressable
-            onPress={onFinish}
-            className="items-center rounded-2xl bg-lime active:opacity-80"
-            style={{ paddingVertical: vs(14) }}
-          >
-            <Text
-              className="font-sans-strong tracking-[1px] text-on-lime"
-              style={{ fontSize: mvs(15) }}
+          <LimeGlow>
+            <Pressable
+              onPress={onFinish}
+              className="items-center rounded-2xl bg-lime active:opacity-80"
+              style={{ paddingVertical: vs(14) }}
             >
-              ЗАВЕРШИТИ
-            </Text>
-          </Pressable>
+              <Text
+                className="font-sans-strong tracking-[1px] text-on-lime"
+                style={{ fontSize: mvs(15) }}
+              >
+                ЗАВЕРШИТИ
+              </Text>
+            </Pressable>
+          </LimeGlow>
         </View>
       </KeyboardAvoidingView>
     </View>

@@ -1,9 +1,10 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { CheckPop } from "@/components/CheckPop";
+import { LimeGlow } from "@/components/LimeGlow";
 import { getRunDetail, type RunPoint, type RunSummary } from "@/db/runs";
 import { formatDistance, formatPace } from "@/lib/geo";
 import { mvs, vs } from "@/lib/responsive";
@@ -44,10 +45,12 @@ export default function RunSummary() {
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top + 16 }}>
       <View className="flex-1 px-4" style={{ paddingBottom: vs(12) }}>
         <View className="items-center">
-          <MaterialCommunityIcons
+          <CheckPop
             name="run-fast"
             size={mvs(48)}
             color={colors.lime}
+            delay={1150}
+            slideIn
           />
           <Text
             className="mt-2 font-display text-text"
@@ -82,14 +85,16 @@ export default function RunSummary() {
       </View>
 
       <View className="px-4" style={{ paddingBottom: insets.bottom + 12 }}>
-        <Pressable
-          onPress={() => router.replace("/")}
-          className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
-            ГОТОВО
-          </Text>
-        </Pressable>
+        <LimeGlow>
+          <Pressable
+            onPress={() => router.replace("/")}
+            className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+              ГОТОВО
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </View>
     </View>
   );

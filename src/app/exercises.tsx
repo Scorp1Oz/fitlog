@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import {
   listExercises,
@@ -65,13 +66,19 @@ export default function ExercisesScreen() {
           className="flex-1 rounded-md border-b border-border bg-surface px-3 py-3 font-sans text-text"
         />
         {!isPicking ? (
-          <Pressable
-            onPress={() => router.push("/exercise-new")}
-            accessibilityLabel="Додати вправу"
-            className="h-11 w-11 items-center justify-center rounded-full bg-lime active:opacity-80"
-          >
-            <MaterialCommunityIcons name="plus" size={24} color={colors.onLime} />
-          </Pressable>
+          <LimeGlow radius={22}>
+            <Pressable
+              onPress={() => router.push("/exercise-new")}
+              accessibilityLabel="Додати вправу"
+              className="h-11 w-11 items-center justify-center rounded-full bg-lime active:opacity-80"
+            >
+              <MaterialCommunityIcons
+                name="plus"
+                size={24}
+                color={colors.onLime}
+              />
+            </Pressable>
+          </LimeGlow>
         ) : null}
       </View>
 

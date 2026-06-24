@@ -189,7 +189,15 @@ export function RunMap({
     : [];
 
   return (
-    <MLMap mapStyle={MAP_STYLE} style={{ flex: 1 }}>
+    <MLMap
+      mapStyle={MAP_STYLE}
+      style={{ flex: 1 }}
+      // Прибираємо службові віджети з кутів: лого «MapLibre», кнопку «i»
+      // (атрибуція) та компас — щоб не перекривали кнопки керування.
+      logo={false}
+      attribution={false}
+      compass={false}
+    >
       {bounds ? (
         <Camera
           initialViewState={{

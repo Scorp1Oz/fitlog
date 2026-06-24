@@ -15,6 +15,7 @@ import {
 } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import { createCustomExercise } from "@/db/exercises";
 import { MUSCLE_ORDER, tMuscle } from "@/exercises/translations";
@@ -160,15 +161,17 @@ export default function ExerciseNewScreen() {
           </Text>
         </View>
 
-        <Pressable
-          onPress={save}
-          disabled={busy}
-          className="mt-8 items-center rounded-2xl bg-lime py-4 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base text-on-lime">
-            ЗБЕРЕГТИ ВПРАВУ
-          </Text>
-        </Pressable>
+        <LimeGlow className="mt-8">
+          <Pressable
+            onPress={save}
+            disabled={busy}
+            className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base text-on-lime">
+              ЗБЕРЕГТИ ВПРАВУ
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </ScrollView>
     </View>
   );

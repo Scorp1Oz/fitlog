@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { BackHandler, useWindowDimensions, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import PagerView, {
   type PagerViewOnPageSelectedEvent,
 } from "react-native-pager-view";
@@ -45,12 +51,38 @@ export default function MainPager() {
 
   const { width, height } = useWindowDimensions();
 
+  // Під час забігу шапка профілю згортається (висота→0 + згасання), щоб «Біг»
+  // розгорнувся на весь екран. Природну висоту міряємо один раз до анімації.
+  const [headerH, setHeaderH] = useState(0);
+  const headerP = useSharedValue(0);
+
+  useEffect(() => {
+    headerP.value = withTiming(running ? 1 : 0, {
+      duration: 380,
+      easing: Easing.inOut(Easing.cubic),
+    });
+  }, [running, headerP]);
+
+  const headerStyle = useAnimatedStyle(() => ({
+    height: headerH > 0 ? headerH * (1 - headerP.value) : undefined,
+    opacity: 1 - headerP.value,
+    transform: [{ translateY: -headerH * 0.3 * headerP.value }],
+  }));
+
   return (
     <View className="flex-1 bg-bg">
       <ScreenBackground />
       {/* Хрестики як на авторизації — фонова декорація за контентом. */}
       <FloatingCrosses width={width} height={height} count={14} />
-      <ProfileHeader />
+      <Animated.View
+        className="overflow-hidden"
+        style={headerStyle}
+        onLayout={(e) => {
+          if (headerH === 0) setHeaderH(e.nativeEvent.layout.height);
+        }}
+      >
+        <ProfileHeader />
+      </Animated.View>
 
       <View className="flex-1">
         <PagerView
@@ -62,7 +94,7 @@ export default function MainPager() {
           scrollEnabled={!running}
         >
           <View key="home" className="flex-1">
-            <HomeScreen />
+            <HomeScreen onGoToRun={() => goTo(2)} />
           </View>
           <View key="workout" className="flex-1">
             <WorkoutScreen />

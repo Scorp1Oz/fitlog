@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { useConfirm } from "@/components/ConfirmDialog";
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import {
   deleteRoutine,
@@ -12,7 +13,7 @@ import {
 } from "@/db/routines";
 import { formatTarget } from "@/lib/strength";
 import { useTheme } from "@/theme/useTheme";
-import { useWorkoutStore } from "@/workout/workout-store";
+import { useStartRoutine } from "@/workout/useStartRoutine";
 
 export default function RoutineDetailScreen() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function RoutineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const routineId = Number(id);
   const confirm = useConfirm((s) => s.ask);
-  const startFromRoutine = useWorkoutStore((s) => s.startFromRoutine);
+  const startRoutine = useStartRoutine();
 
   const [name, setName] = useState<string | null>(null);
   const [exercises, setExercises] = useState<RoutineExercise[]>([]);
@@ -35,19 +36,7 @@ export default function RoutineDetailScreen() {
     }, [routineId])
   );
 
-  const onStart = () => {
-    startFromRoutine(
-      routineId,
-      exercises.map((ex) => ({
-        exerciseId: ex.exercise_id,
-        name: ex.name,
-        targetSets: ex.target_sets ?? 1,
-        repLow: ex.rep_low ?? 0,
-        repHigh: ex.rep_high ?? 0,
-      }))
-    );
-    router.push("/routine-run");
-  };
+  const onStart = () => startRoutine(routineId);
 
   const onDelete = async () => {
     const ok = await confirm({
@@ -133,23 +122,27 @@ export default function RoutineDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Низ: почати тренування за рутиною */}
+      {/* Низ: почати тренування за рутиною (свічіння — лише коли активна) */}
       <View className="px-4 pt-2 pb-8">
-        <Pressable
-          onPress={onStart}
-          disabled={exercises.length === 0}
-          className={`items-center rounded-2xl py-4 ${
-            exercises.length === 0 ? "bg-surface-2" : "bg-lime active:opacity-80"
-          }`}
-        >
-          <Text
-            className={`font-sans-strong text-base tracking-[1px] ${
-              exercises.length === 0 ? "text-text-dim" : "text-on-lime"
+        <LimeGlow enabled={exercises.length > 0}>
+          <Pressable
+            onPress={onStart}
+            disabled={exercises.length === 0}
+            className={`items-center rounded-2xl py-4 ${
+              exercises.length === 0
+                ? "bg-surface-2"
+                : "bg-lime active:opacity-80"
             }`}
           >
-            ПОЧАТИ ТРЕНУВАННЯ
-          </Text>
-        </Pressable>
+            <Text
+              className={`font-sans-strong text-base tracking-[1px] ${
+                exercises.length === 0 ? "text-text-dim" : "text-on-lime"
+              }`}
+            >
+              ПОЧАТИ ТРЕНУВАННЯ
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </View>
     </View>
   );

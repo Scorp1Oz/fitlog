@@ -17,12 +17,19 @@ import { colors } from "@/theme/colors";
 export function LimeGlow({
   children,
   radius = 16,
+  className,
   style,
+  enabled = true,
 }: {
   children: ReactNode;
   // Радіус скруглення гало — має збігатися з кнопкою (rounded-2xl ≈ 16).
   radius?: number;
+  // Класи розкладки (ширина/flex/відступи) — щоб обгортка займала те саме
+  // місце, що й кнопка всередині, і гало точно лягало під неї.
+  className?: string;
   style?: ViewStyle;
+  // Дозволяє вимкнути свічіння (напр. коли кнопка неактивна/не лаймова).
+  enabled?: boolean;
 }) {
   const v = useSharedValue(0);
 
@@ -36,8 +43,16 @@ export function LimeGlow({
 
   const halo = useAnimatedStyle(() => ({ opacity: 0.35 + v.value * 0.5 }));
 
+  if (!enabled) {
+    return (
+      <View className={className} style={style}>
+        {children}
+      </View>
+    );
+  }
+
   return (
-    <View style={style}>
+    <View className={className} style={style}>
       <Animated.View
         pointerEvents="none"
         style={[

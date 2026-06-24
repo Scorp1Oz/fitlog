@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import { createProgram, getProgramDetail, updateProgram } from "@/db/programs";
 import { listRoutines, type RoutineSummary } from "@/db/routines";
@@ -145,15 +146,17 @@ export default function ProgramEditScreen() {
           );
         })}
 
-        <Pressable
-          onPress={save}
-          disabled={busy}
-          className="mt-8 items-center rounded-2xl bg-lime py-4 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
-            ЗБЕРЕГТИ ПРОГРАМУ
-          </Text>
-        </Pressable>
+        <LimeGlow className="mt-8">
+          <Pressable
+            onPress={save}
+            disabled={busy}
+            className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+              ЗБЕРЕГТИ ПРОГРАМУ
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </ScrollView>
 
       {/* Вибір рутини на день. Бекдроп — окремий Pressable ПОЗАДУ картки. */}

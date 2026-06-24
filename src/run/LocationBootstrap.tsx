@@ -5,6 +5,7 @@ import * as Location from "expo-location";
 import { useEffect } from "react";
 
 import { initNotifications } from "@/lib/notify";
+import { scheduleDailyNudges } from "@/lib/reminders";
 
 import { useRunStore } from "./run-store";
 
@@ -14,8 +15,9 @@ export function LocationBootstrap() {
   useEffect(() => {
     let cancelled = false;
 
-    // Дозвіл і канал сповіщень для фонового таймера відпочинку.
-    initNotifications();
+    // Дозвіл і канал сповіщень для фонового таймера відпочинку, далі —
+    // легкі щоденні нагадування про тренування/пробіжку.
+    initNotifications().then(() => scheduleDailyNudges());
 
     (async () => {
       const fg = await Location.requestForegroundPermissionsAsync();

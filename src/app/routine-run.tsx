@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/auth/AuthContext";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useCurtain } from "@/components/CurtainOverlay";
+import { LimeGlow } from "@/components/LimeGlow";
 import {
   countCompletedSets,
   getLastExerciseSets,
@@ -460,36 +461,40 @@ export default function RoutineRun() {
           </Pressable>
 
           {isLast ? (
-            <Pressable
-              onPress={onFinish}
-              className="flex-[1.4] items-center rounded-2xl bg-lime active:opacity-80"
-              style={{ paddingVertical: vs(14) }}
-            >
-              <Text
-                className="font-sans-strong tracking-[1px] text-on-lime"
-                style={{ fontSize: mvs(15) }}
+            <LimeGlow className="flex-[1.4]">
+              <Pressable
+                onPress={onFinish}
+                className="w-full items-center rounded-2xl bg-lime active:opacity-80"
+                style={{ paddingVertical: vs(14) }}
               >
-                ЗАВЕРШИТИ
-              </Text>
-            </Pressable>
+                <Text
+                  className="font-sans-strong tracking-[1px] text-on-lime"
+                  style={{ fontSize: mvs(15) }}
+                >
+                  ЗАВЕРШИТИ
+                </Text>
+              </Pressable>
+            </LimeGlow>
           ) : (
-            <Pressable
-              onPress={goNext}
-              className="flex-[1.4] flex-row items-center justify-center gap-1 rounded-2xl bg-lime active:opacity-80"
-              style={{ paddingVertical: vs(14) }}
-            >
-              <Text
-                className="font-sans-strong tracking-[1px] text-on-lime"
-                style={{ fontSize: mvs(15) }}
+            <LimeGlow className="flex-[1.4]">
+              <Pressable
+                onPress={goNext}
+                className="w-full flex-row items-center justify-center gap-1 rounded-2xl bg-lime active:opacity-80"
+                style={{ paddingVertical: vs(14) }}
               >
-                ДАЛІ
-              </Text>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={mvs(20)}
-                color={colors.onLime}
-              />
-            </Pressable>
+                <Text
+                  className="font-sans-strong tracking-[1px] text-on-lime"
+                  style={{ fontSize: mvs(15) }}
+                >
+                  ДАЛІ
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={mvs(20)}
+                  color={colors.onLime}
+                />
+              </Pressable>
+            </LimeGlow>
           )}
         </View>
       </KeyboardAvoidingView>

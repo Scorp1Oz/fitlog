@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { CheckPop } from "@/components/CheckPop";
+import { LimeGlow } from "@/components/LimeGlow";
 import {
   getSessionDetail,
   getSessionRecords,
@@ -42,10 +44,11 @@ export default function WorkoutSummary() {
         contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
       >
         <View className="items-center">
-          <MaterialCommunityIcons
+          <CheckPop
             name="check-circle-outline"
             size={48}
             color={colors.lime}
+            delay={1150}
           />
           <Text className="mt-2 font-display text-3xl text-text">
             ТРЕНУВАННЯ ЗАВЕРШЕНО
@@ -122,14 +125,16 @@ export default function WorkoutSummary() {
       </ScrollView>
 
       <View className="px-4" style={{ paddingBottom: insets.bottom + 12 }}>
-        <Pressable
-          onPress={() => router.replace("/")}
-          className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
-            ГОТОВО
-          </Text>
-        </Pressable>
+        <LimeGlow>
+          <Pressable
+            onPress={() => router.replace("/")}
+            className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+              ГОТОВО
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </View>
     </View>
   );

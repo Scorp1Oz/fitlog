@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import {
   getSessionDetail,
@@ -303,13 +304,15 @@ export default function SessionScreen() {
                   СКАСУВАТИ
                 </Text>
               </Pressable>
-              <Pressable
-                onPress={save}
-                disabled={saving}
-                className="flex-1 items-center rounded-2xl bg-lime py-4 active:opacity-80"
-              >
-                <Text className="font-sans-strong text-on-lime">ЗБЕРЕГТИ</Text>
-              </Pressable>
+              <LimeGlow className="flex-1">
+                <Pressable
+                  onPress={save}
+                  disabled={saving}
+                  className="w-full items-center rounded-2xl bg-lime py-4 active:opacity-80"
+                >
+                  <Text className="font-sans-strong text-on-lime">ЗБЕРЕГТИ</Text>
+                </Pressable>
+              </LimeGlow>
             </View>
           ) : (
             <Pressable

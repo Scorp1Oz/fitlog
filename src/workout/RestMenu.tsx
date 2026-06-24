@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 
+import { LimeGlow } from "@/components/LimeGlow";
 import { useTheme } from "@/theme/useTheme";
 
 const ITEM_H = 44;
@@ -157,16 +158,18 @@ export function RestMenu({
             <Wheel values={SECONDS} value={sec} onChange={setSec} />
           </View>
 
-          <Pressable
-            onPress={() => {
-              const total = min * 60 + sec;
-              if (total > 0) onStart(total);
-              onClose();
-            }}
-            className="mt-2 items-center rounded-2xl bg-lime py-3 active:opacity-80"
-          >
-            <Text className="font-sans-strong text-on-lime">ЗАПУСТИТИ</Text>
-          </Pressable>
+          <LimeGlow className="mt-2">
+            <Pressable
+              onPress={() => {
+                const total = min * 60 + sec;
+                if (total > 0) onStart(total);
+                onClose();
+              }}
+              className="items-center rounded-2xl bg-lime py-3 active:opacity-80"
+            >
+              <Text className="font-sans-strong text-on-lime">ЗАПУСТИТИ</Text>
+            </Pressable>
+          </LimeGlow>
 
           <View className="my-5 h-px bg-border" />
 

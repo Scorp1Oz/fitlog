@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import {
   getActiveProgramId,
@@ -131,14 +132,16 @@ export default function ProgramsScreen() {
             </Text>
           </Pressable>
         ) : null}
-        <Pressable
-          onPress={() => router.push("/program-edit")}
-          className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
-            + НОВА ПРОГРАМА
-          </Text>
-        </Pressable>
+        <LimeGlow>
+          <Pressable
+            onPress={() => router.push("/program-edit")}
+            className="items-center rounded-2xl bg-lime py-4 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base tracking-[1px] text-on-lime">
+              + НОВА ПРОГРАМА
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </View>
     </View>
   );

@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import {
   deleteProgram,
@@ -140,8 +141,9 @@ export default function ProgramDetailScreen() {
         })}
       </ScrollView>
 
-      {/* Низ: зробити активною / активна */}
+      {/* Низ: зробити активною / активна (свічіння — лише на лаймовій дії) */}
       <View className="px-4 pt-2 pb-8">
+        <LimeGlow enabled={!isActive}>
         <Pressable
           onPress={toggleActive}
           className={`flex-row items-center justify-center gap-2 rounded-2xl py-4 active:opacity-80 ${
@@ -165,6 +167,7 @@ export default function ProgramDetailScreen() {
             </Text>
           )}
         </Pressable>
+        </LimeGlow>
       </View>
     </View>
   );

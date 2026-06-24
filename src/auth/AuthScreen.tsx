@@ -14,6 +14,7 @@ import {
 
 import Svg, { Defs, Rect, RadialGradient, Stop } from "react-native-svg";
 
+import { LimeGlow } from "@/components/LimeGlow";
 import { useLock } from "@/lock/LockContext";
 import { useTheme } from "@/theme/useTheme";
 
@@ -167,15 +168,17 @@ export function AuthScreen() {
           <Text className="font-mono text-xs text-orange">{error}</Text>
         ) : null}
 
-        <Pressable
-          onPress={submit}
-          disabled={busy}
-          className="items-center rounded-md bg-lime py-3 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base text-on-lime">
-            {isRegister ? "СТВОРИТИ АКАУНТ" : "УВІЙТИ"}
-          </Text>
-        </Pressable>
+        <LimeGlow radius={6}>
+          <Pressable
+            onPress={submit}
+            disabled={busy}
+            className="items-center rounded-md bg-lime py-3 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base text-on-lime">
+              {isRegister ? "СТВОРИТИ АКАУНТ" : "УВІЙТИ"}
+            </Text>
+          </Pressable>
+        </LimeGlow>
 
         <Pressable onPress={switchMode} className="items-center py-1">
           <Text className="font-sans text-sm text-text">

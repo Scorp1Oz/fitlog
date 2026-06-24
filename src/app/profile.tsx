@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Alert, Platform, Pressable, Text, TextInput, View } from "react-native";
 
 import { useAuth } from "@/auth/AuthContext";
+import { LimeGlow } from "@/components/LimeGlow";
 import { StackHeader } from "@/components/StackHeader";
 import { ageFromBirthdate } from "@/lib/date";
 import { Avatar } from "@/profile/Avatar";
@@ -192,15 +193,17 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <Pressable
-          onPress={save}
-          disabled={busy}
-          className="w-full items-center rounded-md bg-lime py-3 active:opacity-80"
-        >
-          <Text className="font-sans-strong text-base text-on-lime">
-            ЗБЕРЕГТИ
-          </Text>
-        </Pressable>
+        <LimeGlow className="w-full" radius={6}>
+          <Pressable
+            onPress={save}
+            disabled={busy}
+            className="w-full items-center rounded-md bg-lime py-3 active:opacity-80"
+          >
+            <Text className="font-sans-strong text-base text-on-lime">
+              ЗБЕРЕГТИ
+            </Text>
+          </Pressable>
+        </LimeGlow>
       </View>
     </View>
   );
